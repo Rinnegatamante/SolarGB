@@ -11,8 +11,8 @@ extern "C" {
 #define HOST_SCREEN_W (960)
 #define HOST_SCREEN_H (544)
 
-#define GB_SCREEN_W (144)
-#define GB_SCREEN_H (160)
+#define GB_SCREEN_W (160)
+#define GB_SCREEN_H (144)
 
 enum {
 	EMU_NOT_RUNNING,

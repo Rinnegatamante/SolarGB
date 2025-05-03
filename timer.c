@@ -22,16 +22,16 @@ void timer_tick() {
 	
 	switch (timer.tac & 0x03) {
 	case 0:
-		timer_update = (((prev_div & 0x200) == 0x200) && (!((timer.div & 0x200) == 0x200)));
+		timer_update = (((prev_div & 0x200) == 0x200) && ((timer.div & 0x200) == 0));
 		break;
 	case 1:
-		timer_update = (((prev_div & 0x08) == 0x08) && (!((timer.div & 0x08) == 0x08)));
+		timer_update = (((prev_div & 0x08) == 0x08) && ((timer.div & 0x08) == 0));
 		break;
 	case 2:
-		timer_update = (((prev_div & 0x20) == 0x20) && (!((timer.div & 0x20) == 0x20)));
+		timer_update = (((prev_div & 0x20) == 0x20) && ((timer.div & 0x20) == 0));
 		break;
 	default:
-		timer_update = (((prev_div & 0x80) == 0x80) && (!((timer.div & 0x80) == 0x80)));
+		timer_update = (((prev_div & 0x80) == 0x80) && ((timer.div & 0x80) == 0));
 		break;
 	}
 	
@@ -47,7 +47,7 @@ void timer_tick() {
 uint8_t timer_read(uint16_t addr) {
 	switch (addr) {
 	case 0xFF04:
-		return timer.div;
+		return timer.div >> 8;
 	case 0xFF05:
 		return timer.tima;
 	case 0xFF06:
@@ -60,7 +60,7 @@ uint8_t timer_read(uint16_t addr) {
 void timer_write(uint16_t addr, uint8_t val) {
 	switch (addr) {
 	case 0xFF04:
-		timer.div = val;
+		timer.div = 0;
 		break;
 	case 0xFF05:
 		timer.tima = val;

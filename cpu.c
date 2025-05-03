@@ -226,7 +226,7 @@ static instr_t instrs[] = {
 	[0xC1] = {.type = IN_POP, .addr_mode = AM_R, .reg1 = RT_BC},
 	[0xC2] = {.type = IN_JP, .addr_mode = AM_D16, .cnd = CT_NZ},
 	[0xC3] = {.type = IN_JP, .addr_mode = AM_D16},
-	[0xC4] = {.type = IN_CALL, .addr_mode = AM_D16},
+	[0xC4] = {.type = IN_CALL, .addr_mode = AM_D16, .cnd = CT_NZ},
 	[0xC5] = {.type = IN_PUSH, .addr_mode = AM_R, .reg1 = RT_BC},
 	[0xC6] = {.type = IN_ADD, .addr_mode = AM_R_D8, .reg1 = RT_A},
 	[0xC7] = {.type = IN_RST, .param = 0x00},
@@ -673,15 +673,18 @@ void _IN_ADD() {
 	if (cpu.instr->reg1 == RT_SP) {
 		val = reg + (int8_t)cpu.fetched_data;
 		CPU_SET_FLAG(FLAG_Z, 0);
+		CPU_SET_FLAG(FLAG_N, 0);
 		CPU_SET_FLAG(FLAG_H, ((reg & 0x0F) + (cpu.fetched_data & 0x0F)) >= 0x10 ? 1 : 0);
 		CPU_SET_FLAG(FLAG_C, ((reg & 0xFF) + (cpu.fetched_data & 0xFF)) >= 0x100 ? 1 : 0);
 	} else {
 		val = reg + cpu.fetched_data;
 		if (cpu.instr->reg1 > RT_SP) {
+			CPU_SET_FLAG(FLAG_N, 0);
 			CPU_SET_FLAG(FLAG_H, ((reg & 0x0FFF) + (cpu.fetched_data & 0x0FFF)) >= 0x1000 ? 1 : 0);
 			CPU_SET_FLAG(FLAG_C, val >= 0x10000 ? 1 : 0);
 		} else if (cpu.instr->reg1 < RT_SP) {
 			CPU_SET_FLAG(FLAG_Z, ((val) & 0xFF) == 0);
+			CPU_SET_FLAG(FLAG_N, 0);
 			CPU_SET_FLAG(FLAG_H, ((reg & 0x0F) + (cpu.fetched_data & 0x0F)) >= 0x10 ? 1 : 0);
 			CPU_SET_FLAG(FLAG_C, ((reg & 0xFF) + (cpu.fetched_data & 0xFF)) >= 0x100 ? 1 : 0);
 		}
@@ -689,8 +692,9 @@ void _IN_ADD() {
 	cpu_write_reg(cpu.instr->reg1, val & 0xFFFF);
 }
 void _IN_SUB() {
-	uint16_t val = cpu_read_reg(cpu.instr->reg1) - cpu.fetched_data;;
+	uint16_t val = cpu_read_reg(cpu.instr->reg1) - cpu.fetched_data;
 	CPU_SET_FLAG(FLAG_Z, val == 0);
+	CPU_SET_FLAG(FLAG_N, 1);
 	CPU_SET_FLAG(FLAG_H, ((int)cpu_read_reg(cpu.instr->reg1) & 0x0F) - ((int)cpu.fetched_data & 0x0F) < 0);
 	CPU_SET_FLAG(FLAG_C, ((int)cpu_read_reg(cpu.instr->reg1)) - ((int)cpu.fetched_data) < 0);
 	cpu_write_reg(cpu.instr->reg1, val);
@@ -708,8 +712,8 @@ void _IN_SBC() {
 	int reg = cpu_read_reg(cpu.instr->reg1);
 	CPU_SET_FLAG(FLAG_Z, reg - val == 0);
 	CPU_SET_FLAG(FLAG_N, 1);
-	CPU_SET_FLAG(FLAG_H, (reg & 0x0F) - ((int)cpu.fetched_data & 0x0F) - (int)CPU_FLAG_C_SET < 0);
-	CPU_SET_FLAG(FLAG_C, reg - (int)cpu.fetched_data - (int)CPU_FLAG_C_SET < 0);
+	CPU_SET_FLAG(FLAG_H, ((reg & 0x0F) - ((int)cpu.fetched_data & 0x0F) - (int)CPU_FLAG_C_SET) < 0);
+	CPU_SET_FLAG(FLAG_C, (reg - (int)cpu.fetched_data - (int)CPU_FLAG_C_SET) < 0);
 }
 void _IN_OR() {
 	cpu.regs.A |= cpu.fetched_data & 0xFF;
@@ -719,9 +723,11 @@ void _IN_OR() {
 	CPU_SET_FLAG(FLAG_C, 0);
 }
 void _IN_CP() {
-	cpu.regs.A = ~cpu.regs.A;
+	int val = (int)cpu.regs.A - (int)cpu.fetched_data;
+	CPU_SET_FLAG(FLAG_Z, val == 0);
 	CPU_SET_FLAG(FLAG_N, 1);
-	CPU_SET_FLAG(FLAG_H, 1);
+	CPU_SET_FLAG(FLAG_H, ((int)cpu.regs.A & 0x0F) - ((int)cpu.fetched_data & 0x0F) < 0);
+	CPU_SET_FLAG(FLAG_C, val < 0);
 }
 void _IN_CB() {
 	uint8_t val = cpu.fetched_data;
@@ -1156,31 +1162,31 @@ void cpu_step() {
 		if (CPU_MASTER_INTR_SET(IT_VBLANK)) {
 			stack_push16(cpu.regs.PC);
 			cpu.regs.PC = 0x40;
-			cpu.interrupts &=  ~IT_VBLANK;
+			cpu.interrupts &= ~IT_VBLANK;
 			cpu.halted = 0;
 			cpu.master_interrupts = 0;
 		} else if (CPU_MASTER_INTR_SET(IT_LCD_STAT)) {
 			stack_push16(cpu.regs.PC);
 			cpu.regs.PC = 0x40;
-			cpu.interrupts &=  ~IT_LCD_STAT;
+			cpu.interrupts &= ~IT_LCD_STAT;
 			cpu.halted = 0;
 			cpu.master_interrupts = 0;
 		} else if (CPU_MASTER_INTR_SET(IT_TIMER)) {
 			stack_push16(cpu.regs.PC);
 			cpu.regs.PC = 0x40;
-			cpu.interrupts &=  ~IT_TIMER;
+			cpu.interrupts &= ~IT_TIMER;
 			cpu.halted = 0;
 			cpu.master_interrupts = 0;
 		} else if (CPU_MASTER_INTR_SET(IT_SERIAL)) {
 			stack_push16(cpu.regs.PC);
 			cpu.regs.PC = 0x40;
-			cpu.interrupts &=  ~IT_SERIAL;
+			cpu.interrupts &= ~IT_SERIAL;
 			cpu.halted = 0;
 			cpu.master_interrupts = 0;
 		} else if (CPU_MASTER_INTR_SET(IT_JOYPAD)) {
 			stack_push16(cpu.regs.PC);
 			cpu.regs.PC = 0x40;
-			cpu.interrupts &=  ~IT_JOYPAD;
+			cpu.interrupts &= ~IT_JOYPAD;
 			cpu.halted = 0;
 			cpu.master_interrupts = 0;
 		}

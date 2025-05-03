@@ -22,7 +22,7 @@ OBJS     := $(CFILES)
 PREFIX  = arm-vita-eabi
 CC      = $(PREFIX)-gcc
 CXX      = $(PREFIX)-g++
-CFLAGS  = -fsigned-char -Wl,-q -O3 -g -fno-optimize-sibling-calls \
+CFLAGS  = -fsigned-char -Wl,-q -O3 -g \
 	-ffast-math -mtune=cortex-a9 -mfpu=neon
 CXXFLAGS  = $(CFLAGS) -fno-exceptions -std=gnu++11
 ASFLAGS = $(CFLAGS)
