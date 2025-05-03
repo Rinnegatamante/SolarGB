@@ -1,0 +1,268 @@
+#include <vitasdk.h>
+#include <vitaGL.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include "bus.h"
+#include "cpu.h"
+#include "dma.h"
+#include "emu.h"
+#include "ppu.h"
+
+ppu_t ppu = {};
+lcd_t lcd = {};
+
+static GLuint screen_gl_tex, ppu_dbg_gl_tex;
+
+static uint32_t ppu_colors[4] = {0xFFFFFFFF, 0xFFAAAAAA, 0xFF555555, 0xFF000000}; 
+
+static inline __attribute__((always_inline)) void ppu_draw_image(GLuint tex, float x, float y, float w, float h, float scale) {
+	glBindTexture(GL_TEXTURE_2D, tex);
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glOrtho(0, HOST_SCREEN_W, HOST_SCREEN_H, 0, -1, 1);
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+	glEnable(GL_TEXTURE_2D);
+	
+	float vtxs[] = {x, y + (h * scale), x, y, x + (w * scale), y + (h * scale), x + (w * scale), y};
+	float tcs[] = {0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f};
+	glVertexPointer(2, GL_FLOAT, 0, vtxs);
+	glTexCoordPointer(2, GL_FLOAT, 0, tcs);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+}
+
+#define ppu_draw_frame() ppu_draw_image(screen_gl_tex, 100.0f, 56.0f, GB_SCREEN_W, GB_SCREEN_H, 3.0f)
+
+static inline __attribute__((always_inline)) void ppu_clear_pipeline() {
+	while (ppu.fifo.head) {
+		pixel_t *p = ppu.fifo.head;
+		ppu.fifo.head = ppu.fifo.head->next;
+		free(p);
+	}
+	ppu.fifo.size = 0;
+	ppu.fifo.tail = NULL;
+}
+
+static void ppu_fetch_pipeline() {
+	uint16_t addr;
+	switch (ppu.fifo.fetch_state) {
+	case FS_TILE:
+		if ((lcd.lcdc & 0x01) == 0x01) {
+			uint16_t bg_map_area = (lcd.lcdc & 0x08) == 0x08 ? 0x9C00: 0x9800;
+			ppu.fifo.bgw_fetch_data[0] = bus_read(bg_map_area + (ppu.fifo.map_x / 8) + ((ppu.fifo.map_y / 8) * 32));
+			if ((lcd.lcdc & 0x10) == 0x00) {
+				ppu.fifo.bgw_fetch_data[0] += 128;
+			}
+		}
+		ppu.fifo.fetch_state = FS_DATA0;
+		ppu.fifo.fetch_x += 8;
+		break;
+	case FS_DATA0:
+		ppu.fifo.bgw_fetch_data[1] = bus_read(ppu.fifo.bgw_fetch_data[0] * 16 + ppu.fifo.tile_y + ((lcd.lcdc & 0x10) == 0x10) ? 0x8000 : 0x8800);
+		ppu.fifo.fetch_state = FS_DATA1;
+		break;
+	case FS_DATA1:
+		ppu.fifo.bgw_fetch_data[2] = bus_read(ppu.fifo.bgw_fetch_data[0] * 16 + ppu.fifo.tile_y + 1 + ((lcd.lcdc & 0x10) == 0x10) ? 0x8000 : 0x8800);
+		ppu.fifo.fetch_state = FS_IDLE;
+		break;
+	case FS_IDLE:
+		ppu.fifo.fetch_state = FS_PUSH;
+		break;
+	case FS_PUSH:
+		if (ppu.fifo.size <= 8) {
+			int x = ppu.fifo.fetch_x - (8 - (lcd.scroll_x % 8));
+			if (x >= 0) {
+				for (int i = 0; i < 8; i++) {
+					uint8_t bitmask = 1 << (7 - i);
+					uint8_t high = (ppu.fifo.bgw_fetch_data[1] & bitmask) != 0 ? 1 : 0;
+					uint8_t low = (ppu.fifo.bgw_fetch_data[2] & bitmask) != 0 ? 2 : 0;
+					pixel_t *p = (pixel_t *)malloc(sizeof(pixel_t));
+					p->col = lcd.bg_cols[high | low];
+					p->next = NULL;
+					p->prev = ppu.fifo.tail;
+					ppu.fifo.size++;
+					if (ppu.fifo.tail) {
+						ppu.fifo.tail->next = p;
+					} else {
+						ppu.fifo.head = p;
+					}
+					ppu.fifo.tail = p;
+					ppu.fifo.fifo_x++;
+				}
+			}
+			ppu.fifo.fetch_state = FS_TILE;
+		}
+		break;
+	default:
+		break;
+	}
+}
+
+static void lcd_init() {
+	lcd.lcdc = 0x91;
+	lcd.lcds = 0x00;
+	lcd.scroll_x = lcd.scroll_y = 0;
+	lcd.ly = lcd.ly_cmp = lcd.dma = 0;
+	lcd.bg_pal = 0xFC;
+	lcd.obj_pal[0] = lcd.obj_pal[1] = 0xFF;
+	lcd.win_x = lcd.win_y = 0;
+	for (int i = 0; i < 4; i++) {
+		lcd.bg_cols[i] = lcd.sp1_cols[i] = lcd.sp2_cols[i] = ppu_colors[i];
+	}
+}
+
+void ppu_init() {
+	glGenTextures(1, &screen_gl_tex);
+	vglUseVram(GL_FALSE);
+	glBindTexture(GL_TEXTURE_2D, screen_gl_tex);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GB_SCREEN_W, GB_SCREEN_H, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	ppu.screen_tex = (uint32_t *)vglGetTexDataPointer(GL_TEXTURE_2D);
+	if (emu.debug_ppu) {
+		glGenTextures(1, &ppu_dbg_gl_tex);
+		glBindTexture(GL_TEXTURE_2D, ppu_dbg_gl_tex);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 128, 192, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+		ppu.dbg_tex = (uint32_t *)vglGetTexDataPointer(GL_TEXTURE_2D);
+	}
+	vglUseVram(GL_TRUE);
+	
+	ppu.cur_frame = 0;
+	ppu.lines = 0;
+	ppu.fifo.line_x = 0;
+	ppu.fifo.pushed_x = 0;
+	ppu.fifo.fetch_x = 0;
+	ppu.fifo.fetch_state = FS_TILE;
+	ppu.fifo.fifo_x = 0;
+	ppu_clear_pipeline();
+	
+	lcd_init();
+	LCD_SET_MODE(MODE_OAM);
+	
+	sceClibMemset(ppu.oam_ram, 0, 0x40);
+	sceClibMemset(ppu.vram, 0, 0x2000);
+}
+
+static inline __attribute__((always_inline)) void ppu_inc_ly() {
+	lcd.ly++;
+	if (lcd.ly == lcd.ly_cmp) {
+		lcd.lcds |= 0x04;
+		if (LCD_SS_SET(SS_LYC)) {
+			CPU_SET_INTERRUPT(IT_LCD_STAT);
+		}
+	} else {
+		lcd.lcds &= ~0x04;
+	}
+}
+
+void ppu_tick() {
+	ppu.lines++;
+	switch (lcd.lcds & 0x03) {
+	case MODE_HBLANK:
+		if (ppu.lines >= TICKS_PER_LINE) {
+			ppu_inc_ly();
+			if (lcd.ly >= GB_SCREEN_W) {
+				LCD_SET_MODE(MODE_VBLANK);
+				CPU_SET_INTERRUPT(IT_VBLANK);
+				if (LCD_SS_SET(SS_VBLANK)) {
+					CPU_SET_INTERRUPT(IT_LCD_STAT);
+				}
+				ppu.cur_frame++;
+				ppu_draw_frame();
+			} else {
+				LCD_SET_MODE(MODE_OAM);
+			}
+			ppu.lines = 0;
+		}
+		break;
+	case MODE_VBLANK:
+		if (ppu.lines >= TICKS_PER_LINE) {
+			ppu_inc_ly();
+			if (lcd.ly >= LINES_PER_FRAME) {
+				LCD_SET_MODE(MODE_OAM);
+				lcd.ly = 0;
+			}
+			ppu.lines = 0;
+		}
+		break;
+	case MODE_OAM:
+		if (ppu.lines >= 80) {
+			LCD_SET_MODE(MODE_XFER);
+			ppu.fifo.fetch_state = 0;
+			ppu.fifo.line_x = 0;
+			ppu.fifo.fetch_x = 0;
+			ppu.fifo.pushed_x = 0;
+			ppu.fifo.fifo_x = 0;
+		}
+		break;
+	case MODE_XFER:
+		ppu.fifo.map_y = lcd.ly + lcd.scroll_y;
+		ppu.fifo.map_x = ppu.fifo.fetch_x + lcd.scroll_x;
+		ppu.fifo.tile_y = (ppu.fifo.map_y % 8) * 2;
+		if ((ppu.lines & 1) == 0) {
+			ppu_fetch_pipeline();
+		}
+		if (ppu.fifo.size > 8) {
+			uint32_t clr = ppu.fifo.tail->col;
+			pixel_t *p = ppu.fifo.tail->prev;
+			free(ppu.fifo.tail);
+			ppu.fifo.tail = p;
+			if (p) {
+				p->next = NULL;
+			} else {
+				ppu.fifo.head = NULL;
+			}
+			ppu.fifo.size--;
+			if (ppu.fifo.line_x >= (lcd.scroll_x % 8)) {
+				ppu.screen_tex[ppu.fifo.pushed_x + (lcd.ly * GB_SCREEN_W)] = clr;
+				ppu.fifo.pushed_x++;
+			}
+			ppu.fifo.line_x++;
+		}
+		if (ppu.fifo.pushed_x >= GB_SCREEN_H) {
+			ppu_clear_pipeline();
+			LCD_SET_MODE(MODE_HBLANK);
+			if (LCD_SS_SET(SS_HBLANK)) {
+				CPU_SET_INTERRUPT(IT_LCD_STAT);
+			}
+		}
+		break;
+	default:
+		break;
+	}
+}
+
+void lcd_write(uint16_t addr, uint8_t val) {
+	uint8_t *p = (uint8_t *)&lcd;
+	p[addr - 0xFF40] = val;
+	
+	uint8_t v;
+	switch (addr) {
+	case 0xFF46:
+		dma_start(val);
+		break;
+	case 0xFF47:
+		lcd.bg_cols[0] = ppu_colors[val & 0x03];
+		lcd.bg_cols[1] = ppu_colors[(val >> 2) & 0x03];
+		lcd.bg_cols[2] = ppu_colors[(val >> 4) & 0x03];
+		lcd.bg_cols[3] = ppu_colors[(val >> 6) & 0x03];
+		break;
+	case 0xFF48:
+		v = val & 0b11111100;
+		lcd.sp1_cols[0] = ppu_colors[0];
+		lcd.sp1_cols[1] = ppu_colors[(v >> 2) & 0x03];
+		lcd.sp1_cols[2] = ppu_colors[(v >> 4) & 0x03];
+		lcd.sp1_cols[3] = ppu_colors[(v >> 6) & 0x03];
+		break;
+	case 0xFF49:
+		v = val & 0b11111100;
+		lcd.sp2_cols[0] = ppu_colors[0];
+		lcd.sp2_cols[1] = ppu_colors[(v >> 2) & 0x03];
+		lcd.sp2_cols[2] = ppu_colors[(v >> 4) & 0x03];
+		lcd.sp2_cols[3] = ppu_colors[(v >> 6) & 0x03];
+		break;
+	default:
+		break;
+	}
+}
