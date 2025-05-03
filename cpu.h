@@ -58,6 +58,7 @@ enum {
 
 // Address mode types
 enum {
+	AM_IMP    = 0x00,
 	AM_R_D16  = 0x01,
 	AM_R_R    = 0x02,
 	AM_MR_R   = 0x03,
@@ -82,6 +83,7 @@ enum {
 
 // Register access types
 enum {
+	RT_NONE = 0x00,
 	RT_A    = 0x01,
 	RT_F    = 0x02,
 	RT_B    = 0x03,
@@ -100,6 +102,7 @@ enum {
 
 // Condition types
 enum {
+	CT_NONE = 0x00,
 	CT_NZ   = 0x01,
 	CT_Z    = 0x02,
 	CT_NC   = 0x03,

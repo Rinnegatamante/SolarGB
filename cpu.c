@@ -6,6 +6,13 @@
 #include "cpu.h"
 #include "emu.h"
 
+typedef void (*func_t)();
+typedef uint8_t (*ufunc_t)();
+typedef void (*wfunc_t)(uint16_t);
+typedef uint16_t (*rfunc_t)();
+static void _NOP() {}
+static uint8_t _RET1() { return 1; }
+
 cpu_t cpu;
 static char serial_out[1024] = {};
 static size_t serial_len = 0;
@@ -292,219 +299,218 @@ void cpu_init() {
 	cpu.halted = 0;
 }
 
-// Registers reading function
-uint16_t cpu_read_reg(uint8_t reg) {
-	switch (reg) {
-	case RT_A:
-		return cpu.regs.A;
-	case RT_F:
-		return cpu.regs.F;
-	case RT_B:
-		return cpu.regs.B;
-	case RT_C:
-		return cpu.regs.C;
-	case RT_D:
-		return cpu.regs.D;
-	case RT_E:
-		return cpu.regs.E;
-	case RT_H:
-		return cpu.regs.H;
-	case RT_L:
-		return cpu.regs.L;
-	case RT_SP:
-		return cpu.regs.SP;
-	case RT_PC:
-		return cpu.regs.PC;
-	case RT_HL:
-		return ((uint16_t)cpu.regs.L | (((uint16_t)cpu.regs.H) << 8));
-	case RT_AF:
-		return ((uint16_t)cpu.regs.F | (((uint16_t)cpu.regs.A) << 8));
-	case RT_BC:
-		return ((uint16_t)cpu.regs.C | (((uint16_t)cpu.regs.B) << 8));
-	case RT_DE:
-		return ((uint16_t)cpu.regs.E | (((uint16_t)cpu.regs.D) << 8));
-	default:
-		sceClibPrintf("cpu_read_reg: Invalid register\n");
-		break;
+// Registers reading functions
+uint16_t _R_RT_A() { return cpu.regs.A; }
+uint16_t _R_RT_B() { return cpu.regs.B; }
+uint16_t _R_RT_C() { return cpu.regs.C; }
+uint16_t _R_RT_D() { return cpu.regs.D; }
+uint16_t _R_RT_E() { return cpu.regs.E; }
+uint16_t _R_RT_F() { return cpu.regs.F; }
+uint16_t _R_RT_H() { return cpu.regs.H; }
+uint16_t _R_RT_L() { return cpu.regs.L; }
+uint16_t _R_RT_SP() { return cpu.regs.SP; }
+uint16_t _R_RT_PC() { return cpu.regs.PC; }
+uint16_t _R_RT_HL() { return ((uint16_t)cpu.regs.L | (((uint16_t)cpu.regs.H) << 8)); }
+uint16_t _R_RT_AF() { return ((uint16_t)cpu.regs.F | (((uint16_t)cpu.regs.A) << 8)); }
+uint16_t _R_RT_BC() { return ((uint16_t)cpu.regs.C | (((uint16_t)cpu.regs.B) << 8)); }
+uint16_t _R_RT_DE() { return ((uint16_t)cpu.regs.E | (((uint16_t)cpu.regs.D) << 8)); }
+rfunc_t reg_read_funcs[] = {
+	[RT_A] = _R_RT_A,
+	[RT_B] = _R_RT_B,
+	[RT_C] = _R_RT_C,
+	[RT_D] = _R_RT_D,
+	[RT_E] = _R_RT_E,
+	[RT_F] = _R_RT_F,
+	[RT_H] = _R_RT_H,
+	[RT_L] = _R_RT_L,
+	[RT_SP] = _R_RT_SP,
+	[RT_PC] = _R_RT_PC,
+	[RT_HL] = _R_RT_HL,
+	[RT_BC] = _R_RT_BC,
+	[RT_AF] = _R_RT_AF,
+	[RT_DE] = _R_RT_DE,
+};
+#define cpu_read_reg(r) reg_read_funcs[r]()
+
+// Registers writing functions
+void _RT_A(uint16_t val) { cpu.regs.A = val; }
+void _RT_B(uint16_t val) { cpu.regs.B = val; }
+void _RT_C(uint16_t val) { cpu.regs.C = val; }
+void _RT_D(uint16_t val) { cpu.regs.D = val; }
+void _RT_E(uint16_t val) { cpu.regs.E = val; }
+void _RT_F(uint16_t val) { cpu.regs.F = val; }
+void _RT_H(uint16_t val) { cpu.regs.H = val; }
+void _RT_L(uint16_t val) { cpu.regs.L = val; }
+void _RT_SP(uint16_t val) { cpu.regs.SP = val; }
+void _RT_PC(uint16_t val) { cpu.regs.PC = val; }
+void _RT_HL(uint16_t val) {
+	cpu.regs.L = val & 0xFF;
+	cpu.regs.H = (val >> 8) & 0xFF;
+}
+void _RT_AF(uint16_t val) {
+	cpu.regs.F = val & 0xFF;
+	cpu.regs.A = (val >> 8) & 0xFF;
+}
+void _RT_BC(uint16_t val) {
+	cpu.regs.C = val & 0xFF;
+	cpu.regs.B = (val >> 8) & 0xFF;
+}
+void _RT_DE(uint16_t val) {
+	cpu.regs.E = val & 0xFF;
+	cpu.regs.D = (val >> 8) & 0xFF;
+}
+wfunc_t reg_write_funcs[] = {
+	[RT_A] = _RT_A,
+	[RT_B] = _RT_B,
+	[RT_C] = _RT_C,
+	[RT_D] = _RT_D,
+	[RT_E] = _RT_E,
+	[RT_F] = _RT_F,
+	[RT_H] = _RT_H,
+	[RT_L] = _RT_L,
+	[RT_SP] = _RT_SP,
+	[RT_PC] = _RT_PC,
+	[RT_HL] = _RT_HL,
+	[RT_BC] = _RT_BC,
+	[RT_AF] = _RT_AF,
+	[RT_DE] = _RT_DE,
+};
+#define cpu_write_reg(r, v) reg_write_funcs[r](v);
+
+// Instruction fecting functions
+void _AM_R() {
+	cpu.fetched_data = cpu_read_reg(cpu.instr->reg1);
+}
+void _AM_R_R() {
+	cpu.fetched_data = cpu_read_reg(cpu.instr->reg2);
+}
+void _AM_R_D8() {
+	cpu.fetched_data = bus_read(cpu.regs.PC);
+	emu_incr_cycles(1);
+	cpu.regs.PC++;
+}
+void _AM_D16() {
+	uint16_t low = bus_read(cpu.regs.PC);
+	emu_incr_cycles(1);
+	uint16_t high = bus_read(cpu.regs.PC + 1);
+	emu_incr_cycles(1);
+	cpu.fetched_data = low | (high << 8);
+	cpu.regs.PC += 2;
+}
+void _AM_MR_R() {
+	cpu.fetched_data = cpu_read_reg(cpu.instr->reg2);
+	cpu.mem_dest = cpu_read_reg(cpu.instr->reg1);
+	cpu.use_mem_dest = 1;
+	if (cpu.instr->reg1 == RT_C) {
+		cpu.mem_dest |= 0xFF00;
 	}
 }
-
-// Registers writing function
-void cpu_write_reg(uint8_t reg, uint16_t val) {
-	switch (reg) {
-	case RT_A:
-		cpu.regs.A = val;
-		break;
-		break;
-	case RT_F:
-		cpu.regs.F = val;
-		break;
-	case RT_B:
-		cpu.regs.B = val;
-		break;
-	case RT_C:
-		cpu.regs.C = val;
-		break;
-	case RT_D:
-		cpu.regs.D = val;
-		break;
-	case RT_E:
-		cpu.regs.E = val;
-		break;
-	case RT_H:
-		cpu.regs.H = val;
-		break;
-	case RT_L:
-		cpu.regs.L = val;
-		break;
-	case RT_SP:
-		cpu.regs.SP = val;
-		break;
-	case RT_PC:
-		cpu.regs.PC = val;
-		break;
-	case RT_HL:
-		cpu.regs.L = val & 0xFF;
-		cpu.regs.H = (val >> 8) & 0xFF;
-		break;
-	case RT_AF:
-		cpu.regs.F = val & 0xFF;
-		cpu.regs.A = (val >> 8) & 0xFF;
-		break;
-	case RT_BC:
-		cpu.regs.C = val & 0xFF;
-		cpu.regs.B = (val >> 8) & 0xFF;
-		break;
-	case RT_DE:
-		cpu.regs.E = val & 0xFF;
-		cpu.regs.D = (val >> 8) & 0xFF;
-	default:
-		break;
-	}	
-}
-
-void cpu_fetch_data() {
-	uint16_t low, high;
-	switch (cpu.instr->addr_mode) {
-	case AM_R:
-		cpu.fetched_data = cpu_read_reg(cpu.instr->reg1);
-		break;
-	case AM_R_R:
-		cpu.fetched_data = cpu_read_reg(cpu.instr->reg2);
-		break;
-	case AM_R_D8:
-	case AM_HL_SPR:
-	case AM_D8:
-	case AM_R_A8:
-		cpu.fetched_data = bus_read(cpu.regs.PC);
-		emu_incr_cycles(1);
-		cpu.regs.PC++;
-		break;
-	case AM_D16:
-	case AM_R_D16:
-		low = bus_read(cpu.regs.PC);
-		emu_incr_cycles(1);
-		high = bus_read(cpu.regs.PC + 1);
-		emu_incr_cycles(1);
-		cpu.fetched_data = low | (high << 8);
-		cpu.regs.PC += 2;
-		break;
-	case AM_MR_R:
-		cpu.fetched_data = cpu_read_reg(cpu.instr->reg2);
-		cpu.mem_dest = cpu_read_reg(cpu.instr->reg1);
-		cpu.use_mem_dest = 1;
-		if (cpu.instr->reg1 == RT_C) {
-			cpu.mem_dest |= 0xFF00;
-		}
-		break;
-	case AM_R_MR:
-		if (cpu.instr->reg2 == RT_C) {
-			cpu.fetched_data = bus_read(((uint16_t)cpu.regs.C) | 0xFF00);
-		} else {
-			cpu.fetched_data = bus_read(cpu_read_reg(cpu.instr->reg2));
-		}
-		emu_incr_cycles(1);
-		break;
-	case AM_R_HLI:
+void _AM_R_MR() {
+	if (cpu.instr->reg2 == RT_C) {
+		cpu.fetched_data = bus_read(((uint16_t)cpu.regs.C) | 0xFF00);
+	} else {
 		cpu.fetched_data = bus_read(cpu_read_reg(cpu.instr->reg2));
-		emu_incr_cycles(1);
-		cpu_write_reg(RT_HL, cpu_read_reg(RT_HL) + 1);
-		break;
-	case AM_R_HLD:
-		cpu.fetched_data = bus_read(cpu_read_reg(cpu.instr->reg2));
-		emu_incr_cycles(1);
-		cpu_write_reg(RT_HL, cpu_read_reg(RT_HL) - 1);
-		break;
-	case AM_HLI_R:
-		cpu.fetched_data = cpu_read_reg(cpu.instr->reg2);
-		cpu.mem_dest = cpu_read_reg(cpu.instr->reg1);
-		cpu.use_mem_dest = 1;
-		cpu_write_reg(RT_HL, cpu_read_reg(RT_HL) + 1);
-		break;
-	case AM_HLD_R:
-		cpu.fetched_data = cpu_read_reg(cpu.instr->reg2);
-		cpu.mem_dest = cpu_read_reg(cpu.instr->reg1);
-		cpu.use_mem_dest = 1;
-		cpu_write_reg(RT_HL, cpu_read_reg(RT_HL) - 1);
-		break;
-	case AM_A8_R:
-		cpu.mem_dest = bus_read(cpu.regs.PC) | 0xFF00;
-		cpu.use_mem_dest = 1;
-		emu_incr_cycles(1);
-		cpu.regs.PC++;
-		break;
-	case AM_A16_R:
-	case AM_D16_R:
-		low = bus_read(cpu.regs.PC);
-		emu_incr_cycles(1);
-		high = bus_read(cpu.regs.PC + 1);
-		emu_incr_cycles(1);
-		cpu.mem_dest = low | (high << 8);
-		cpu.use_mem_dest = 1;
-		cpu.regs.PC += 2;
-		cpu.fetched_data = cpu_read_reg(cpu.instr->reg2);
-		break;
-	case AM_MR_D8:
-		cpu.fetched_data = bus_read(cpu.regs.PC);
-		emu_incr_cycles(1);
-		cpu.regs.PC++;
-		cpu.mem_dest = cpu_read_reg(cpu.instr->reg1);
-		cpu.use_mem_dest = 1;
-		break;
-	case AM_MR:
-		cpu.mem_dest = cpu_read_reg(cpu.instr->reg1);
-		cpu.use_mem_dest = 1;
-		cpu.fetched_data = bus_read(cpu.mem_dest);
-		emu_incr_cycles(1);
-		break;
-	case AM_R_A16:
-		low = bus_read(cpu.regs.PC);
-		emu_incr_cycles(1);
-		high = bus_read(cpu.regs.PC + 1);
-		emu_incr_cycles(1);
-		cpu.regs.PC += 2;
-		cpu.fetched_data = bus_read(low | (high << 8));
-		emu_incr_cycles(1);
-		break;
-	default:
-		break;
 	}
+	emu_incr_cycles(1);
 }
+void _AM_R_HLI() {
+	cpu.fetched_data = bus_read(cpu_read_reg(cpu.instr->reg2));
+	emu_incr_cycles(1);
+	cpu_write_reg(RT_HL, cpu_read_reg(RT_HL) + 1);
+}
+void _AM_R_HLD() {
+	cpu.fetched_data = bus_read(cpu_read_reg(cpu.instr->reg2));
+	emu_incr_cycles(1);
+	cpu_write_reg(RT_HL, cpu_read_reg(RT_HL) - 1);
+}
+void _AM_HLI_R() {
+	cpu.fetched_data = cpu_read_reg(cpu.instr->reg2);
+	cpu.mem_dest = cpu_read_reg(cpu.instr->reg1);
+	cpu.use_mem_dest = 1;
+	cpu_write_reg(RT_HL, cpu_read_reg(RT_HL) + 1);
+}
+void _AM_HLD_R() {
+	cpu.fetched_data = cpu_read_reg(cpu.instr->reg2);
+	cpu.mem_dest = cpu_read_reg(cpu.instr->reg1);
+	cpu.use_mem_dest = 1;
+	cpu_write_reg(RT_HL, cpu_read_reg(RT_HL) - 1);
+}
+void _AM_A8_R() {
+	cpu.mem_dest = bus_read(cpu.regs.PC) | 0xFF00;
+	cpu.use_mem_dest = 1;
+	emu_incr_cycles(1);
+	cpu.regs.PC++;
+}
+void _AM_A16_R() {
+	uint16_t low = bus_read(cpu.regs.PC);
+	emu_incr_cycles(1);
+	uint16_t high = bus_read(cpu.regs.PC + 1);
+	emu_incr_cycles(1);
+	cpu.mem_dest = low | (high << 8);
+	cpu.use_mem_dest = 1;
+	cpu.regs.PC += 2;
+	cpu.fetched_data = cpu_read_reg(cpu.instr->reg2);
+}
+void _AM_MR_D8() {
+	cpu.fetched_data = bus_read(cpu.regs.PC);
+	emu_incr_cycles(1);
+	cpu.regs.PC++;
+	cpu.mem_dest = cpu_read_reg(cpu.instr->reg1);
+	cpu.use_mem_dest = 1;
+}
+void _AM_MR() {
+	cpu.mem_dest = cpu_read_reg(cpu.instr->reg1);
+	cpu.use_mem_dest = 1;
+	cpu.fetched_data = bus_read(cpu.mem_dest);
+	emu_incr_cycles(1);
+}
+void _AM_R_A16() {
+	uint16_t low = bus_read(cpu.regs.PC);
+	emu_incr_cycles(1);
+	uint16_t high = bus_read(cpu.regs.PC + 1);
+	emu_incr_cycles(1);
+	cpu.regs.PC += 2;
+	cpu.fetched_data = bus_read(low | (high << 8));
+	emu_incr_cycles(1);
+}
+func_t fetch_funcs[] = {
+	[AM_IMP] = _NOP,
+	[AM_R] = _AM_R,
+	[AM_R_R] = _AM_R_R,
+	[AM_R_D8] = _AM_R_D8,
+	[AM_HL_SPR] = _AM_R_D8,
+	[AM_D8] = _AM_R_D8,
+	[AM_R_A8] = _AM_R_D8,
+	[AM_D16] = _AM_D16,
+	[AM_R_D16] = _AM_D16,
+	[AM_MR_R] = _AM_MR_R,
+	[AM_R_MR] = _AM_R_MR,
+	[AM_R_HLI] = _AM_R_HLI,
+	[AM_R_HLD] = _AM_R_HLD,
+	[AM_HLI_R] = _AM_HLI_R,
+	[AM_HLD_R] = _AM_HLD_R,
+	[AM_A8_R] = _AM_A8_R,
+	[AM_A16_R] = _AM_A16_R,
+	[AM_D16_R] = _AM_A16_R,
+	[AM_MR_D8] = _AM_MR_D8,
+	[AM_MR] = _AM_MR,
+	[AM_R_A16] = _AM_R_A16,
+};
+#define cpu_fetch_data() fetch_funcs[cpu.instr->addr_mode]()
 
-static uint8_t cpu_check_cond() {
-	switch (cpu.instr->cnd) {
-	case CT_NZ:
-		return (cpu.regs.F & FLAG_Z) == 0;
-	case CT_Z:
-		return (cpu.regs.F & FLAG_Z) == FLAG_Z;
-	case CT_NC:
-		return (cpu.regs.F & FLAG_C) == 0;
-	case CT_C:
-		return (cpu.regs.F & FLAG_C) == FLAG_C;
-	default:
-		return 1;
-	}
-}
+// Condition checking functions
+uint8_t _CT_NZ() { return (cpu.regs.F & FLAG_Z) == 0; }
+uint8_t _CT_Z() { return (cpu.regs.F & FLAG_Z) == FLAG_Z; }
+uint8_t _CT_NC() { return (cpu.regs.F & FLAG_C) == 0; }
+uint8_t _CT_C() { return (cpu.regs.F & FLAG_C) == FLAG_C; }
+ufunc_t cnd_funcs[] = {
+	[CT_NONE] = _RET1,
+	[CT_NZ] = _CT_NZ,
+	[CT_Z] = _CT_Z,
+	[CT_NC] = _CT_NC,
+	[CT_C] = _CT_C,
+};
+#define cpu_check_cond() cnd_funcs[cpu.instr->cnd]()
 
 static void cpu_goto(uint16_t addr, uint8_t push_pc) {
 	if (cpu_check_cond()) {
@@ -517,7 +523,207 @@ static void cpu_goto(uint16_t addr, uint8_t push_pc) {
 	}
 }
 
-void cpu_exec_bitwise_instr() {
+// Instruction exection functions
+void _IN_LD() {
+	if (cpu.use_mem_dest) {
+		if (cpu.instr->reg2 >= RT_SP) {
+			emu_incr_cycles(1);
+			bus_write16(cpu.mem_dest, cpu.fetched_data);
+		} else {
+			bus_write(cpu.mem_dest, cpu.fetched_data);
+		}
+		emu_incr_cycles(1);
+	} else if (cpu.instr->addr_mode == AM_HL_SPR) {
+		uint16_t r2 = cpu_read_reg(cpu.instr->reg2);
+		CPU_SET_FLAG(FLAG_Z, 0);
+		CPU_SET_FLAG(FLAG_N, 0);
+		CPU_SET_FLAG(FLAG_H, (r2 & 0x0F) + (cpu.fetched_data & 0x0F) >= 0x10);
+		CPU_SET_FLAG(FLAG_C, (r2 & 0xFF) + (cpu.fetched_data & 0xFF) >= 0x100);
+	} else {
+		cpu_write_reg(cpu.instr->reg1, cpu.fetched_data);
+	}
+}
+void _IN_LDH() {
+	if (cpu.instr->reg1 == RT_A) {
+		cpu_write_reg(cpu.instr->reg1, bus_read(cpu.fetched_data | 0xFF00));
+	} else {
+		bus_write(cpu.mem_dest, cpu.regs.A);
+	}
+	emu_incr_cycles(1);
+}
+void _IN_DI() {
+	cpu.master_interrupts = 0;
+}
+void _IN_EI() {
+	cpu.enable_interrupts = 1;
+}
+void _IN_XOR() {
+	cpu.regs.A ^= cpu.fetched_data & 0xFF;
+	CPU_SET_FLAG(FLAG_Z, cpu.regs.A == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, 0);
+}
+void _IN_POP() {
+	uint16_t low = stack_pop();
+	emu_incr_cycles(1);
+	uint16_t high = stack_pop();
+	emu_incr_cycles(1);
+	uint16_t val = (high << 8) | low;
+	if (cpu.instr->reg1 == RT_AF) {
+		cpu_write_reg(cpu.instr->reg1, val & 0xFFF0);
+	} else {
+		cpu_write_reg(cpu.instr->reg1, val);
+	}
+}
+void _IN_PUSH() {
+	uint16_t val = cpu_read_reg(cpu.instr->reg1);
+	emu_incr_cycles(1);
+	stack_push((val >> 8) & 0xFF);
+	emu_incr_cycles(1);
+	stack_push(val & 0xFF);
+	emu_incr_cycles(1);
+}
+void _IN_CALL() {
+	cpu_goto(cpu.fetched_data, 1);
+}
+void _IN_JP() {
+	cpu_goto(cpu.fetched_data, 0);
+}
+void _IN_JR() {
+	int8_t val = (int8_t)(cpu.fetched_data & 0xFF);
+	cpu_goto(cpu.regs.PC + val, 0);
+}
+void _IN_RST() {
+	cpu_goto(cpu.instr->param, 1);
+}
+void _IN_RETI() {
+	cpu.master_interrupts = 1;
+	if (cpu.instr->cnd) {
+		emu_incr_cycles(1);
+	}
+	if (cpu_check_cond()) {
+		uint16_t low = stack_pop();
+		emu_incr_cycles(1);
+		uint16_t high = stack_pop();
+		emu_incr_cycles(1);
+		cpu.regs.PC = (high << 8) | low;
+		emu_incr_cycles(1);
+	}
+}
+void _IN_RET() {
+	if (cpu.instr->cnd) {
+		emu_incr_cycles(1);
+	}
+	if (cpu_check_cond()) {
+		uint16_t low = stack_pop();
+		emu_incr_cycles(1);
+		uint16_t high = stack_pop();
+		emu_incr_cycles(1);
+		cpu.regs.PC = (high << 8) | low;
+		emu_incr_cycles(1);
+	}
+}
+void _IN_INC() {
+	uint16_t val;
+	if (cpu.instr->reg1 >= RT_SP) {
+		emu_incr_cycles(1);
+	}
+	if (cpu.instr->reg1 == RT_HL && cpu.instr->addr_mode == AM_MR) {
+		uint16_t hl = cpu_read_reg(RT_HL);
+		val = (bus_read(hl) + 1) & 0xFF;
+		bus_write(hl, val);
+	} else {
+		val = cpu_read_reg(cpu.instr->reg1) + 1;
+		cpu_write_reg(cpu.instr->reg1, val);
+		val = cpu_read_reg(cpu.instr->reg1); 
+	}
+	if ((cpu.opcode & 0x03) != 0x03) {
+		CPU_SET_FLAG(FLAG_Z, val == 0);
+		CPU_SET_FLAG(FLAG_N, 0);
+		CPU_SET_FLAG(FLAG_H, (val & 0x0F) == 0);
+	}
+}
+void _IN_DEC() {
+	uint16_t val;
+	if (cpu.instr->reg1 >= RT_SP) {
+		emu_incr_cycles(1);
+	}
+	if (cpu.instr->reg1 == RT_HL && cpu.instr->addr_mode == AM_MR) {
+		uint16_t hl = cpu_read_reg(RT_HL);
+		val = bus_read(hl) - 1;
+		bus_write(hl, val);
+	} else {
+		val = cpu_read_reg(cpu.instr->reg1) - 1;
+		cpu_write_reg(cpu.instr->reg1, val);
+		val = cpu_read_reg(cpu.instr->reg1);
+	}
+	if ((cpu.opcode & 0x0B) != 0x0B) {
+		CPU_SET_FLAG(FLAG_Z, val == 0);
+		CPU_SET_FLAG(FLAG_N, 1);
+		CPU_SET_FLAG(FLAG_H, (val & 0x0F) == 0x0F);
+	}
+}
+void _IN_ADD() {
+	uint32_t val;
+	if (cpu.instr->reg1 >= RT_SP) {
+		emu_incr_cycles(1);
+	}
+	uint32_t reg = cpu_read_reg(cpu.instr->reg1);
+	if (cpu.instr->reg1 == RT_SP) {
+		val = reg + (int8_t)cpu.fetched_data;
+		CPU_SET_FLAG(FLAG_Z, 0);
+		CPU_SET_FLAG(FLAG_H, ((reg & 0x0F) + (cpu.fetched_data & 0x0F)) >= 0x10 ? 1 : 0);
+		CPU_SET_FLAG(FLAG_C, ((reg & 0xFF) + (cpu.fetched_data & 0xFF)) >= 0x100 ? 1 : 0);
+	} else {
+		val = reg + cpu.fetched_data;
+		if (cpu.instr->reg1 > RT_SP) {
+			CPU_SET_FLAG(FLAG_H, ((reg & 0x0FFF) + (cpu.fetched_data & 0x0FFF)) >= 0x1000 ? 1 : 0);
+			CPU_SET_FLAG(FLAG_C, val >= 0x10000 ? 1 : 0);
+		} else if (cpu.instr->reg1 < RT_SP) {
+			CPU_SET_FLAG(FLAG_Z, ((val) & 0xFF) == 0);
+			CPU_SET_FLAG(FLAG_H, ((reg & 0x0F) + (cpu.fetched_data & 0x0F)) >= 0x10 ? 1 : 0);
+			CPU_SET_FLAG(FLAG_C, ((reg & 0xFF) + (cpu.fetched_data & 0xFF)) >= 0x100 ? 1 : 0);
+		}
+	}
+	cpu_write_reg(cpu.instr->reg1, val & 0xFFFF);
+}
+void _IN_SUB() {
+	uint16_t val = cpu_read_reg(cpu.instr->reg1) - cpu.fetched_data;;
+	CPU_SET_FLAG(FLAG_Z, val == 0);
+	CPU_SET_FLAG(FLAG_H, ((int)cpu_read_reg(cpu.instr->reg1) & 0x0F) - ((int)cpu.fetched_data & 0x0F) < 0);
+	CPU_SET_FLAG(FLAG_C, ((int)cpu_read_reg(cpu.instr->reg1)) - ((int)cpu.fetched_data) < 0);
+	cpu_write_reg(cpu.instr->reg1, val);
+}
+void _IN_ADC() {
+	uint16_t reg = cpu.regs.A;
+	cpu.regs.A = (reg + cpu.fetched_data + (uint16_t)CPU_FLAG_C_SET) & 0xFF;
+	CPU_SET_FLAG(FLAG_Z, cpu.regs.A == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, (reg & 0x0F) + (cpu.fetched_data & 0x0F) + CPU_FLAG_C_SET > 0x0F);
+	CPU_SET_FLAG(FLAG_C, reg + cpu.fetched_data + (uint16_t)CPU_FLAG_C_SET > 0xFF);
+}
+void _IN_SBC() {
+	uint8_t val = cpu.fetched_data + CPU_FLAG_C_SET;
+	int reg = cpu_read_reg(cpu.instr->reg1);
+	CPU_SET_FLAG(FLAG_Z, reg - val == 0);
+	CPU_SET_FLAG(FLAG_N, 1);
+	CPU_SET_FLAG(FLAG_H, (reg & 0x0F) - ((int)cpu.fetched_data & 0x0F) - (int)CPU_FLAG_C_SET < 0);
+	CPU_SET_FLAG(FLAG_C, reg - (int)cpu.fetched_data - (int)CPU_FLAG_C_SET < 0);
+}
+void _IN_OR() {
+	cpu.regs.A |= cpu.fetched_data & 0xFF;
+	CPU_SET_FLAG(FLAG_Z, cpu.regs.A == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, 0);
+}
+void _IN_CP() {
+	cpu.regs.A = ~cpu.regs.A;
+	CPU_SET_FLAG(FLAG_N, 1);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+void _IN_CB() {
 	uint8_t val = cpu.fetched_data;
 	uint8_t reg = rt_lookup[val & 0x07];
 	uint8_t rval;
@@ -666,281 +872,119 @@ void cpu_exec_bitwise_instr() {
 		break;
 	}
 }
-
-void cpu_exec_instr() {
-	uint16_t low, high, val, reg;
-	uint32_t large_val;
-	uint8_t uint_val;
-	int8_t int_val;
-	
-	switch (cpu.instr->type) {
-	case IN_LD:
-		if (cpu.use_mem_dest) {
-			if (cpu.instr->reg2 >= RT_SP) {
-				emu_incr_cycles(1);
-				bus_write16(cpu.mem_dest, cpu.fetched_data);
-			} else {
-				bus_write(cpu.mem_dest, cpu.fetched_data);
-			}
-			emu_incr_cycles(1);
-		} else if (cpu.instr->addr_mode == AM_HL_SPR) {
-			uint16_t r2 = cpu_read_reg(cpu.instr->reg2);
-			CPU_SET_FLAG(FLAG_Z, 0);
-			CPU_SET_FLAG(FLAG_N, 0);
-			CPU_SET_FLAG(FLAG_H, (r2 & 0x0F) + (cpu.fetched_data & 0x0F) >= 0x10);
-			CPU_SET_FLAG(FLAG_C, (r2 & 0xFF) + (cpu.fetched_data & 0xFF) >= 0x100);
-		} else {
-			cpu_write_reg(cpu.instr->reg1, cpu.fetched_data);
-		}
-		break;
-	case IN_LDH:
-		if (cpu.instr->reg1 == RT_A) {
-			cpu_write_reg(cpu.instr->reg1, bus_read(cpu.fetched_data | 0xFF00));
-		} else {
-			bus_write(cpu.mem_dest, cpu.regs.A);
-		}
-		emu_incr_cycles(1);
-		break;
-	case IN_DI:
-		cpu.master_interrupts = 0;
-		break;
-	case IN_EI:
-		cpu.enable_interrupts = 1;
-		break;
-	case IN_XOR:
-		cpu.regs.A ^= cpu.fetched_data & 0xFF;
-		CPU_SET_FLAG(FLAG_Z, cpu.regs.A == 0);
-		CPU_SET_FLAG(FLAG_N, 0);
-		CPU_SET_FLAG(FLAG_H, 0);
-		CPU_SET_FLAG(FLAG_C, 0);
-		break;
-	case IN_POP:
-		low = stack_pop();
-		emu_incr_cycles(1);
-		high = stack_pop();
-		emu_incr_cycles(1);
-		val = (high << 8) | low;
-		if (cpu.instr->reg1 == RT_AF) {
-			cpu_write_reg(cpu.instr->reg1, val & 0xFFF0);
-		} else {
-			cpu_write_reg(cpu.instr->reg1, val);
-		}
-		break;
-	case IN_PUSH:
-		val = cpu_read_reg(cpu.instr->reg1);
-		emu_incr_cycles(1);
-		stack_push((val >> 8) & 0xFF);
-		emu_incr_cycles(1);
-		stack_push(val & 0xFF);
-		emu_incr_cycles(1);
-		break;
-	case IN_CALL:
-		cpu_goto(cpu.fetched_data, 1);
-		break;
-	case IN_JP:
-		cpu_goto(cpu.fetched_data, 0);
-		break;
-	case IN_JR:
-		int_val = (int8_t)(cpu.fetched_data & 0xFF);
-		cpu_goto(cpu.regs.PC + int_val, 0);
-		break;
-	case IN_RST:
-		cpu_goto(cpu.instr->param, 1);
-		break;
-	case IN_RETI:
-		cpu.master_interrupts = 1;
-	case IN_RET:
-		if (cpu.instr->cnd) {
-			emu_incr_cycles(1);
-		}
-		if (cpu_check_cond()) {
-			low = stack_pop();
-			emu_incr_cycles(1);
-			high = stack_pop();
-			emu_incr_cycles(1);
-			cpu.regs.PC = (high << 8) | low;
-			emu_incr_cycles(1);
-		}
-		break;
-	case IN_INC:
-		if (cpu.instr->reg1 >= RT_SP) {
-			emu_incr_cycles(1);
-		}
-		if (cpu.instr->reg1 == RT_HL && cpu.instr->addr_mode == AM_MR) {
-			uint16_t hl = cpu_read_reg(RT_HL);
-			val = (bus_read(hl) + 1) & 0xFF;
-			bus_write(hl, val);
-		} else {
-			val = cpu_read_reg(cpu.instr->reg1) + 1;
-			cpu_write_reg(cpu.instr->reg1, val);
-			val = cpu_read_reg(cpu.instr->reg1); 
-		}
-		if ((cpu.opcode & 0x03) != 0x03) {
-			CPU_SET_FLAG(FLAG_Z, val == 0);
-			CPU_SET_FLAG(FLAG_N, 0);
-			CPU_SET_FLAG(FLAG_H, (val & 0x0F) == 0);
-		}
-		break;
-	case IN_DEC:
-		if (cpu.instr->reg1 >= RT_SP) {
-			emu_incr_cycles(1);
-		}
-		if (cpu.instr->reg1 == RT_HL && cpu.instr->addr_mode == AM_MR) {
-			uint16_t hl = cpu_read_reg(RT_HL);
-			val = bus_read(hl) - 1;
-			bus_write(hl, val);
-		} else {
-			val = cpu_read_reg(cpu.instr->reg1) - 1;
-			cpu_write_reg(cpu.instr->reg1, val);
-			val = cpu_read_reg(cpu.instr->reg1);
-		}
-		if ((cpu.opcode & 0x0B) != 0x0B) {
-			CPU_SET_FLAG(FLAG_Z, val == 0);
-			CPU_SET_FLAG(FLAG_N, 1);
-			CPU_SET_FLAG(FLAG_H, (val & 0x0F) == 0x0F);
-		}
-		break;
-	case IN_ADD:
-		if (cpu.instr->reg1 >= RT_SP) {
-			emu_incr_cycles(1);
-		}
-		reg = cpu_read_reg(cpu.instr->reg1);
-		if (cpu.instr->reg1 == RT_SP) {
-			large_val = reg + (int8_t)cpu.fetched_data;
-			CPU_SET_FLAG(FLAG_Z, 0);
-			CPU_SET_FLAG(FLAG_H, ((reg & 0x0F) + (cpu.fetched_data & 0x0F)) >= 0x10 ? 1 : 0);
-			CPU_SET_FLAG(FLAG_C, ((reg & 0xFF) + (cpu.fetched_data & 0xFF)) >= 0x100 ? 1 : 0);
-		} else {
-			large_val = reg + cpu.fetched_data;
-			if (cpu.instr->reg1 > RT_SP) {
-				CPU_SET_FLAG(FLAG_H, ((reg & 0x0FFF) + (cpu.fetched_data & 0x0FFF)) >= 0x1000 ? 1 : 0);
-				CPU_SET_FLAG(FLAG_C, (large_val) >= 0x10000 ? 1 : 0);
-			} else if (cpu.instr->reg1 < RT_SP) {
-				CPU_SET_FLAG(FLAG_Z, ((large_val) & 0xFF) == 0);
-				CPU_SET_FLAG(FLAG_H, ((reg & 0x0F) + (cpu.fetched_data & 0x0F)) >= 0x10 ? 1 : 0);
-				CPU_SET_FLAG(FLAG_C, ((reg & 0xFF) + (cpu.fetched_data & 0xFF)) >= 0x100 ? 1 : 0);
-			}
-		}
-		cpu_write_reg(cpu.instr->reg1, large_val & 0xFFFF);
-		break;
-	case IN_SUB:
-		val = cpu_read_reg(cpu.instr->reg1) - cpu.fetched_data;;
-		CPU_SET_FLAG(FLAG_Z, val == 0);
-		CPU_SET_FLAG(FLAG_H, ((int)cpu_read_reg(cpu.instr->reg1) & 0x0F) - ((int)cpu.fetched_data & 0x0F) < 0);
-		CPU_SET_FLAG(FLAG_C, ((int)cpu_read_reg(cpu.instr->reg1)) - ((int)cpu.fetched_data) < 0);
-		cpu_write_reg(cpu.instr->reg1, val);
-		break;
-	case IN_ADC:
-		reg = cpu.regs.A;
-		cpu.regs.A = (reg + cpu.fetched_data + (uint16_t)CPU_FLAG_C_SET) & 0xFF;
-		CPU_SET_FLAG(FLAG_Z, cpu.regs.A == 0);
-		CPU_SET_FLAG(FLAG_N, 0);
-		CPU_SET_FLAG(FLAG_H, (reg & 0x0F) + (cpu.fetched_data & 0x0F) + CPU_FLAG_C_SET > 0x0F);
-		CPU_SET_FLAG(FLAG_C, reg + cpu.fetched_data + (uint16_t)CPU_FLAG_C_SET > 0xFF);
-		break;
-	case IN_SBC:
-		uint_val = cpu.fetched_data + CPU_FLAG_C_SET;
-		reg = cpu_read_reg(cpu.instr->reg1);
-		CPU_SET_FLAG(FLAG_Z, (int)reg - uint_val == 0);
-		CPU_SET_FLAG(FLAG_N, 1);
-		CPU_SET_FLAG(FLAG_H, ((int)reg & 0x0F) - ((int)cpu.fetched_data & 0x0F) - (int)CPU_FLAG_C_SET < 0);
-		CPU_SET_FLAG(FLAG_C, (int)reg - (int)cpu.fetched_data - (int)CPU_FLAG_C_SET < 0);
-		break;
-	case IN_OR:
-		cpu.regs.A |= cpu.fetched_data & 0xFF;
-		CPU_SET_FLAG(FLAG_Z, cpu.regs.A == 0);
-		CPU_SET_FLAG(FLAG_N, 0);
-		CPU_SET_FLAG(FLAG_H, 0);
-		CPU_SET_FLAG(FLAG_C, 0);
-		break;
-	case IN_CP:
-		cpu.regs.A = ~cpu.regs.A;
-		CPU_SET_FLAG(FLAG_N, 1);
-		CPU_SET_FLAG(FLAG_H, 1);
-		break;
-	case IN_CB:
-		cpu_exec_bitwise_instr();
-		break;
-	case IN_AND:
-		cpu.regs.A &= cpu.fetched_data & 0xFF;
-		CPU_SET_FLAG(FLAG_Z, cpu.regs.A == 0);
-		CPU_SET_FLAG(FLAG_N, 0);
-		CPU_SET_FLAG(FLAG_H, 1);
-		CPU_SET_FLAG(FLAG_C, 0);
-		break;
-	case IN_RLCA:
-		uint_val = (cpu.regs.A >> 7) & 1;
-		cpu.regs.A = uint_val | (cpu.regs.A << 1);
-		CPU_SET_FLAG(FLAG_Z, 0);
-		CPU_SET_FLAG(FLAG_N, 0);
-		CPU_SET_FLAG(FLAG_H, 0);
-		CPU_SET_FLAG(FLAG_C, uint_val);
-		break;
-	case IN_RRCA:
-		uint_val = cpu.regs.A & 1;
-		cpu.regs.A = (uint_val << 7) | (cpu.regs.A >> 1);
-		CPU_SET_FLAG(FLAG_Z, 0);
-		CPU_SET_FLAG(FLAG_N, 0);
-		CPU_SET_FLAG(FLAG_H, 0);
-		CPU_SET_FLAG(FLAG_C, uint_val);
-		break;
-	case IN_RLA:
-		uint_val = (cpu.regs.A >> 7) & 1;
-		cpu.regs.A = CPU_FLAG_C_SET | (cpu.regs.A << 1);
-		CPU_SET_FLAG(FLAG_Z, 0);
-		CPU_SET_FLAG(FLAG_N, 0);
-		CPU_SET_FLAG(FLAG_H, 0);
-		CPU_SET_FLAG(FLAG_C, uint_val);
-		break;
-	case IN_RRA:
-		uint_val = cpu.regs.A & 1;
-		cpu.regs.A = (CPU_FLAG_C_SET << 7) | (cpu.regs.A >> 1);
-		CPU_SET_FLAG(FLAG_Z, 0);
-		CPU_SET_FLAG(FLAG_N, 0);
-		CPU_SET_FLAG(FLAG_H, 0);
-		CPU_SET_FLAG(FLAG_C, uint_val);
-		break;
-	case IN_STOP:
-		sceClibPrintf("IN_STOP: NOIMPL\n");
-		break;
-	case IN_DAA:
-		uint_val = 0;
-		int_val = 0;
-		if (CPU_FLAG_H_SET || (((cpu.regs.A & 0x0F) > 9) && !CPU_FLAG_N_SET)) {
-			uint_val = 6;
-		}
-		if (CPU_FLAG_C_SET || ((cpu.regs.A > 0x99) && !CPU_FLAG_N_SET)) {
-			uint_val |= 0x60;
-			int_val = 1;
-		}
-		cpu.regs.A += CPU_FLAG_N_SET ? -uint_val : uint_val;
-		CPU_SET_FLAG(FLAG_Z, cpu.regs.A == 0);
-		CPU_SET_FLAG(FLAG_H, 0);
-		CPU_SET_FLAG(FLAG_C, int_val);
-		break;
-	case IN_CPL:
-		cpu.regs.A = ~cpu.regs.A;
-		CPU_SET_FLAG(FLAG_N, 1);
-		CPU_SET_FLAG(FLAG_H, 1);
-		break;
-	case IN_SCF:
-		CPU_SET_FLAG(FLAG_N, 0);
-		CPU_SET_FLAG(FLAG_H, 0);
-		CPU_SET_FLAG(FLAG_C, 1);
-		break;
-	case IN_CCF:
-		CPU_SET_FLAG(FLAG_N, 0);
-		CPU_SET_FLAG(FLAG_H, 0);
-		CPU_SET_FLAG(FLAG_C, CPU_FLAG_C_SET);
-		break;
-	case IN_HALT:
-		cpu.halted = 1;
-		break;
-	case IN_NOP:
-	default:
-		break;
-	}
+void _IN_AND() {
+	cpu.regs.A &= cpu.fetched_data & 0xFF;
+	CPU_SET_FLAG(FLAG_Z, cpu.regs.A == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+	CPU_SET_FLAG(FLAG_C, 0);
 }
+void _IN_RLCA() {
+	uint8_t val = (cpu.regs.A >> 7) & 1;
+	cpu.regs.A = val | (cpu.regs.A << 1);
+	CPU_SET_FLAG(FLAG_Z, 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, val);
+}
+void _IN_RRCA() {
+	uint8_t val = cpu.regs.A & 1;
+	cpu.regs.A = (val << 7) | (cpu.regs.A >> 1);
+	CPU_SET_FLAG(FLAG_Z, 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, val);
+}
+void _IN_RLA() {
+	uint8_t val = (cpu.regs.A >> 7) & 1;
+	cpu.regs.A = CPU_FLAG_C_SET | (cpu.regs.A << 1);
+	CPU_SET_FLAG(FLAG_Z, 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, val);
+}
+void _IN_RRA() {
+	uint8_t val = cpu.regs.A & 1;
+	cpu.regs.A = (CPU_FLAG_C_SET << 7) | (cpu.regs.A >> 1);
+	CPU_SET_FLAG(FLAG_Z, 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, val);
+}
+void _IN_STOP() {
+	sceClibPrintf("IN_STOP: NOIMPL\n");
+}
+void _IN_DAA() {
+	uint8_t val = 0;
+	int val2 = 0;
+	if (CPU_FLAG_H_SET || (((cpu.regs.A & 0x0F) > 9) && !CPU_FLAG_N_SET)) {
+		val = 6;
+	}
+	if (CPU_FLAG_C_SET || ((cpu.regs.A > 0x99) && !CPU_FLAG_N_SET)) {
+		val |= 0x60;
+		val2 = 1;
+	}
+	cpu.regs.A += CPU_FLAG_N_SET ? -val : val;
+	CPU_SET_FLAG(FLAG_Z, cpu.regs.A == 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, val2);
+}
+void _IN_CPL() {
+	cpu.regs.A = ~cpu.regs.A;
+	CPU_SET_FLAG(FLAG_N, 1);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+void _IN_SCF() {
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, 1);
+}
+void _IN_CCF() {
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, CPU_FLAG_C_SET);
+}
+void _IN_HALT() {
+	cpu.halted = 1;
+}
+func_t instr_funcs[] = {
+	[IN_LD] = _IN_LD,
+	[IN_LDH] = _IN_LDH,
+	[IN_DI] = _IN_DI,
+	[IN_EI] = _IN_EI,
+	[IN_XOR] = _IN_XOR,
+	[IN_POP] = _IN_POP,
+	[IN_PUSH] = _IN_PUSH,
+	[IN_CALL] = _IN_CALL,
+	[IN_JP] = _IN_JP,
+	[IN_JR] = _IN_JR,
+	[IN_RST] = _IN_RST,
+	[IN_RETI] = _IN_RETI,
+	[IN_RET] = _IN_RET,
+	[IN_INC] = _IN_INC,
+	[IN_DEC] = _IN_DEC,
+	[IN_ADD] = _IN_ADD,
+	[IN_SUB] = _IN_SUB,
+	[IN_ADC] = _IN_ADC,
+	[IN_SBC] = _IN_SBC,
+	[IN_OR] = _IN_OR,
+	[IN_CP] = _IN_CP,
+	[IN_CB] = _IN_CB,
+	[IN_AND] = _IN_AND,
+	[IN_RLCA] = _IN_RLCA,
+	[IN_RRCA] = _IN_RRCA,
+	[IN_RLA] = _IN_RLA,
+	[IN_RRA] = _IN_RRA,
+	[IN_STOP] = _IN_STOP,
+	[IN_DAA] = _IN_DAA,
+	[IN_CPL] = _IN_CPL,
+	[IN_SCF] = _IN_SCF,
+	[IN_CCF] = _IN_CCF,
+	[IN_NOP] = _NOP,
+	[IN_HALT] = _IN_HALT,
+};
+
+#define cpu_exec_instr() instr_funcs[cpu.instr->type]()
 
 // Register names lookup table
 static const char *reg_names[] = {
@@ -1095,12 +1139,10 @@ void cpu_step() {
 		// Serial data handling
 		if (emu.serial_port_enabled) {
 			if (bus_read(0xFF02) == 0x81) {
-				char ch = bus_read(0xFF01);
+				uint8_t ch = bus_read(0xFF01);
 				serial_out[serial_len++] = ch;
 				serial_out[serial_len] = 0;
 				bus_write(0xFF02, 0);
-			}
-			if (serial_len > 0) {
 				sceClibPrintf("I/O: %s\n", serial_out);
 			}
 		}
