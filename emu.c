@@ -30,10 +30,12 @@ void emu_incr_cycles(uint32_t cycles) {
 }
 
 int main(int argc, char *argv[]) {
+#if 1
 	sceSysmoduleLoadModule(SCE_SYSMODULE_RAZOR_CAPTURE);
-	
+#endif
+
 	// Initialize default emulator settings
-	emu.debug_log = 0;
+	emu.debug_log = 1;
 	emu.debug_ppu = 1;
 	emu.serial_port_enabled = 0;
 	
@@ -90,10 +92,9 @@ int main(int argc, char *argv[]) {
 				oldpad = pad.buttons;
 			}
 			if (emu.debug_ppu) {
-				//ppu_show_dbg_tex();
+				ppu_show_dbg_tex();
 			}
 		}
-		sceClibPrintf("new_frame\n");
 		vglSwapBuffers(GL_FALSE);
 		glFinish();
 	}

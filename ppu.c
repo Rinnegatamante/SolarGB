@@ -36,6 +36,34 @@ static inline __attribute__((always_inline)) void ppu_draw_image(GLuint tex, flo
 
 #define ppu_draw_frame() ppu_draw_image(screen_gl_tex, 100.0f, 56.0f, GB_SCREEN_W, GB_SCREEN_H, 3.0f)
 
+static void ppu_update_dbg_tile(int n, int x, int y) {
+	for (int tile_y = 0; tile_y < 16; tile_y += 2) {
+		int offs = (n * 16) + tile_y;
+		for (int bit = 7; bit >= 0; bit--) {
+			uint8_t high = ppu.vram[offs] & (1 << bit) != 0 ? 2 : 0;
+			uint8_t low = ppu.vram[offs + 1] & (1 << bit) != 0 ? 1 : 0;
+			ppu.dbg_tex[x + (7 - bit) + (y + (tile_y / 2)) * 128] = ppu_colors[high | low];
+		}
+	}
+}
+
+void ppu_show_dbg_tex() {
+	int tile_id = 0;
+	int tile_x = 0;
+	int tile_y = 0;
+	for (int y = 0; y < 24; y++) {
+		for (int x = 0; x < 16; x++) {
+			ppu_update_dbg_tile(tile_id, tile_x, tile_y);
+			tile_x += 8;
+			tile_id++;
+		}
+		tile_y += 8;
+		tile_x = 0;
+	}
+	
+	ppu_draw_image(ppu_dbg_gl_tex, 650.0f, 80.0f, 128.0f, 192.0f, 2.0f);
+}
+
 static inline __attribute__((always_inline)) void ppu_clear_pipeline() {
 	while (ppu.fifo.head) {
 		pixel_t *p = ppu.fifo.head;

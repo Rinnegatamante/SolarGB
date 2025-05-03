@@ -117,6 +117,7 @@ static inline __attribute__((always_inline)) uint8_t ppu_oam_read(uint16_t addr)
 
 void ppu_init();
 void ppu_tick();
+void ppu_show_dbg_tex();
 
 #define LCD_SET_MODE(x) \
 	lcd.lcds &= ~0x03; \

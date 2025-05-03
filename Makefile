@@ -16,10 +16,7 @@ CFILES = bus.o \
 	ppu.o \
 	ram.o \
 	timer.o
-	
 
-CGFILES  := $(foreach dir,$(SHADERS), $(wildcard $(dir)/*.cg))
-CGSHADERS  := $(CGFILES:.cg=.h)
 OBJS     := $(CFILES)
 
 PREFIX  = arm-vita-eabi
