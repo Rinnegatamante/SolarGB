@@ -41,7 +41,7 @@ void bus_write(uint16_t addr, uint8_t val) {
 		// Reerved echo RAM
 	} else if (addr < 0xFEA0) {
 		// OAM
-		if (dma.active) {
+		if (!dma.active) {
 			ppu_oam_write(addr, val);
 		}
 	} else if (addr < 0xFF00) {
