@@ -18,6 +18,22 @@ void gui_init() {
 	sceTouchSetSamplingState(SCE_TOUCH_PORT_FRONT, SCE_TOUCH_SAMPLING_STATE_STOP);
 }
 
+void gui_emu_options() {
+	char titlebar[256];
+	sprintf(titlebar, "SolarGB v.%s - Emulator options", EMU_VERSION);
+	ImGui_ImplVitaGL_NewFrame();
+	ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiSetCond_Always);
+	ImGui::SetNextWindowSize(ImVec2(HOST_SCREEN_W, HOST_SCREEN_H), ImGuiSetCond_Always);
+	ImGui::Begin(titlebar, NULL, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse);
+	ImGui::Checkbox("Verbose CPU interpreter logging", (bool *)&emu.debug_log);
+	ImGui::Checkbox("Show PPU Vram content on screen", (bool *)&emu.debug_ppu);
+	ImGui::Checkbox("Enable I/O Serial Port logging", (bool *)&emu.serial_port_enabled);
+	ImGui::End();
+	glViewport(0, 0, static_cast<int>(ImGui::GetIO().DisplaySize.x), static_cast<int>(ImGui::GetIO().DisplaySize.y));
+	ImGui::Render();
+	ImGui_ImplVitaGL_RenderDrawData(ImGui::GetDrawData());
+}
+
 rom_t *gui_rom_selector() {
 	rom_t *ret = NULL;
 	char titlebar[256];

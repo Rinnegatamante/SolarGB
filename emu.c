@@ -35,9 +35,9 @@ int main(int argc, char *argv[]) {
 #endif
 
 	// Initialize default emulator settings
-	emu.debug_log = 1;
+	emu.debug_log = 0;
 	emu.debug_ppu = 1;
-	emu.serial_port_enabled = 0;
+	emu.serial_port_enabled = 1;
 	
 	// Scan roms folder and keep only .gb files
 	SceUID d = sceIoDopen(ROM_FOLDER);
@@ -56,9 +56,21 @@ int main(int argc, char *argv[]) {
 	
 	gui_init();
 	rom_t *to_start = NULL;
+	uint32_t oldpad = 0;
+	uint8_t show_options = 0;
 	while (!to_start) {
-		to_start = gui_rom_selector();
+		SceCtrlData pad;
+		sceCtrlPeekBufferPositive(0, &pad, 1);
+		if (show_options) {
+			gui_emu_options();
+		} else {
+			to_start = gui_rom_selector();
+		}
+		if ((pad.buttons & SCE_CTRL_LTRIGGER) && (!(oldpad & SCE_CTRL_LTRIGGER))) {
+			show_options = !show_options;
+		}
 		vglSwapBuffers(GL_FALSE);
+		oldpad = pad.buttons;
 	}
 	
 	// Main emulator code start
@@ -72,7 +84,6 @@ int main(int argc, char *argv[]) {
 	io_init();
 	emu.state = EMU_RUNNING;
 	
-	uint32_t oldpad = 0;
 	while (emu.state != EMU_NOT_RUNNING) {
 		glClear(GL_COLOR_BUFFER_BIT);
 		SceCtrlData pad;
