@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include "cart.h"
 #include "emu.h"
 #include "gui.h"
 
@@ -54,4 +55,23 @@ rom_t *gui_rom_selector() {
 	ImGui::Render();
 	ImGui_ImplVitaGL_RenderDrawData(ImGui::GetDrawData());
 	return ret;
+}
+
+void gui_pause_menu() {
+	char titlebar[256];
+	sprintf(titlebar, "SolarGB v.%s - %s", EMU_VERSION, rom.name);
+	ImGui_ImplVitaGL_NewFrame();
+	ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiSetCond_Always);
+	ImGui::SetNextWindowSize(ImVec2(HOST_SCREEN_W, HOST_SCREEN_H), ImGuiSetCond_Always);
+	ImGui::Begin(titlebar, NULL, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse);
+	if (ImGui::Button("Resume emulation", ImVec2(-1.0f, 0.0f))) {
+		emu.state = EMU_RUNNING;
+	}
+	if (ImGui::Button("Close game", ImVec2(-1.0f, 0.0f))) {
+		emu.state = EMU_NOT_RUNNING;
+	}
+	ImGui::End();
+	glViewport(0, 0, static_cast<int>(ImGui::GetIO().DisplaySize.x), static_cast<int>(ImGui::GetIO().DisplaySize.y));
+	ImGui::Render();
+	ImGui_ImplVitaGL_RenderDrawData(ImGui::GetDrawData());
 }

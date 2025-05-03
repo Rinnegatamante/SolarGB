@@ -55,59 +55,62 @@ int main(int argc, char *argv[]) {
 	sceIoDclose(d);
 	
 	gui_init();
-	rom_t *to_start = NULL;
-	uint32_t oldpad = 0;
-	uint8_t show_options = 0;
-	while (!to_start) {
-		SceCtrlData pad;
-		sceCtrlPeekBufferPositive(0, &pad, 1);
-		if (show_options) {
-			gui_emu_options();
-		} else {
-			to_start = gui_rom_selector();
-		}
-		if ((pad.buttons & SCE_CTRL_LTRIGGER) && (!(oldpad & SCE_CTRL_LTRIGGER))) {
-			show_options = !show_options;
-		}
-		vglSwapBuffers(GL_FALSE);
-		oldpad = pad.buttons;
-	}
 	
-	// Main emulator code start
-	char rom_path[512];
-	sprintf(rom_path, "%s%s", ROM_FOLDER, to_start->name);
-	cart_load(rom_path);
-	ram_init();
-	ppu_init();
-	cpu_init();
-	timer_init();
-	io_init();
-	emu.state = EMU_RUNNING;
+	for (;;) {
+		rom_t *to_start = NULL;
+		uint32_t oldpad = 0;
+		uint8_t show_options = 0;
+		while (!to_start) {
+			SceCtrlData pad;
+			sceCtrlPeekBufferPositive(0, &pad, 1);
+			if (show_options) {
+				gui_emu_options();
+			} else {
+				to_start = gui_rom_selector();
+			}
+			if ((pad.buttons & SCE_CTRL_LTRIGGER) && (!(oldpad & SCE_CTRL_LTRIGGER))) {
+				show_options = !show_options;
+			}
+			vglSwapBuffers(GL_FALSE);
+			oldpad = pad.buttons;
+		}
 	
-	while (emu.state != EMU_NOT_RUNNING) {
-		glClear(GL_COLOR_BUFFER_BIT);
-		SceCtrlData pad;
-		if (emu.state == EMU_PAUSED) { // Emulation paused
-			// TODO
-		} else { // Emulation active
-			uint64_t work_frame = ppu.cur_frame;
-			while ((work_frame == ppu.cur_frame) && (emu.state == EMU_RUNNING)) {
-				// Perform one CPU step
-				cpu_step();
-				
-				// Check if we want to pause the emulator
-				sceCtrlPeekBufferPositive(0, &pad, 1);
-				if ((pad.buttons & SCE_CTRL_LTRIGGER) && (!(oldpad & SCE_CTRL_LTRIGGER))) {
-					emu.state = EMU_PAUSED;
+		// Main emulator code start
+		char rom_path[512];
+		sprintf(rom_path, "%s%s", ROM_FOLDER, to_start->name);
+		cart_load(rom_path);
+		ram_init();
+		ppu_init();
+		cpu_init();
+		timer_init();
+		io_init();
+		emu.state = EMU_RUNNING;
+	
+		while (emu.state != EMU_NOT_RUNNING) {
+			glClear(GL_COLOR_BUFFER_BIT);
+			SceCtrlData pad;
+			if (emu.state == EMU_PAUSED) { // Emulation paused
+				gui_pause_menu();
+			} else { // Emulation active
+				uint64_t work_frame = ppu.cur_frame;
+				while ((work_frame == ppu.cur_frame) && (emu.state == EMU_RUNNING)) {
+					// Perform one CPU step
+					cpu_step();
+
+					// Check if we want to pause the emulator
+					sceCtrlPeekBufferPositive(0, &pad, 1);
+					if ((pad.buttons & SCE_CTRL_LTRIGGER) && (!(oldpad & SCE_CTRL_LTRIGGER))) {
+						emu.state = EMU_PAUSED;
+					}
+					oldpad = pad.buttons;
 				}
-				oldpad = pad.buttons;
+				if (emu.debug_ppu) {
+					ppu_show_dbg_tex();
+				}
 			}
-			if (emu.debug_ppu) {
-				ppu_show_dbg_tex();
-			}
+			vglSwapBuffers(GL_FALSE);
+			glFinish();
 		}
-		vglSwapBuffers(GL_FALSE);
-		glFinish();
 	}
 	
 	return 0;

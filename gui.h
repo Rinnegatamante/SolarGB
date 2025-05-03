@@ -8,6 +8,7 @@ extern "C" {
 void gui_init();
 rom_t *gui_rom_selector();
 void gui_emu_options();
+void gui_pause_menu();
 
 #ifdef __cplusplus
 }

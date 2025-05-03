@@ -143,12 +143,14 @@ static void lcd_init() {
 }
 
 void ppu_init() {
-	glGenTextures(1, &screen_gl_tex);
 	vglUseVram(GL_FALSE);
-	glBindTexture(GL_TEXTURE_2D, screen_gl_tex);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GB_SCREEN_W, GB_SCREEN_H, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-	ppu.screen_tex = (uint32_t *)vglGetTexDataPointer(GL_TEXTURE_2D);
-	if (emu.debug_ppu) {
+	if (ppu.screen_tex == NULL) {
+		glGenTextures(1, &screen_gl_tex);
+		glBindTexture(GL_TEXTURE_2D, screen_gl_tex);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GB_SCREEN_W, GB_SCREEN_H, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+		ppu.screen_tex = (uint32_t *)vglGetTexDataPointer(GL_TEXTURE_2D);
+	}
+	if (emu.debug_ppu && ppu.dbg_tex == NULL) {
 		glGenTextures(1, &ppu_dbg_gl_tex);
 		glBindTexture(GL_TEXTURE_2D, ppu_dbg_gl_tex);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 128, 192, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
