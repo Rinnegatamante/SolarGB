@@ -109,7 +109,6 @@ int main(int argc, char *argv[]) {
 				}
 			}
 			vglSwapBuffers(GL_FALSE);
-			glFinish();
 		}
 	}
 	

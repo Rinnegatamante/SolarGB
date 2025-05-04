@@ -14,12 +14,14 @@ typedef void (*func_t)();
 ppu_t ppu = {};
 lcd_t lcd = {};
 
-static GLuint screen_gl_tex, ppu_dbg_gl_tex;
+#define SCREEN_BUFFERS (3)
+static GLuint screen_gl_tex[SCREEN_BUFFERS], ppu_dbg_gl_tex[SCREEN_BUFFERS];
 
 static uint32_t ppu_colors[4] = {0xFFFFFFFF, 0xFFAAAAAA, 0xFF555555, 0xFF000000}; 
 
-static inline __attribute__((always_inline)) void ppu_draw_image(GLuint tex, float x, float y, float w, float h, float scale) {
-	glBindTexture(GL_TEXTURE_2D, tex);
+static inline __attribute__((always_inline)) void ppu_draw_image(GLuint *tex, void *buf, float x, float y, float w, float h, float scale) {
+	glBindTexture(GL_TEXTURE_2D, tex[ppu.cur_frame % SCREEN_BUFFERS]);
+	sceClibMemcpy(vglGetTexDataPointer(GL_TEXTURE_2D), buf, w * h * 4);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	glOrtho(0, HOST_SCREEN_W, HOST_SCREEN_H, 0, -1, 1);
@@ -36,7 +38,7 @@ static inline __attribute__((always_inline)) void ppu_draw_image(GLuint tex, flo
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
 
-#define ppu_draw_frame() ppu_draw_image(screen_gl_tex, 100.0f, 56.0f, GB_SCREEN_W, GB_SCREEN_H, 3.0f)
+#define ppu_draw_frame() ppu_draw_image(screen_gl_tex, ppu.screen_tex, 100.0f, 56.0f, GB_SCREEN_W, GB_SCREEN_H, 3.0f)
 
 static void ppu_update_dbg_tile(int n, int x, int y) {
 	for (int tile_y = 0; tile_y < 16; tile_y += 2) {
@@ -63,7 +65,7 @@ void ppu_show_dbg_tex() {
 		tile_x = 0;
 	}
 	
-	ppu_draw_image(ppu_dbg_gl_tex, 650.0f, 80.0f, 128.0f, 192.0f, 2.0f);
+	ppu_draw_image(ppu_dbg_gl_tex, ppu.dbg_tex, 650.0f, 80.0f, 128.0f, 192.0f, 2.0f);
 }
 
 static inline __attribute__((always_inline)) void ppu_clear_pipeline() {
@@ -214,16 +216,20 @@ static void lcd_init() {
 void ppu_init() {
 	vglUseVram(GL_FALSE);
 	if (ppu.screen_tex == NULL) {
-		glGenTextures(1, &screen_gl_tex);
-		glBindTexture(GL_TEXTURE_2D, screen_gl_tex);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GB_SCREEN_W, GB_SCREEN_H, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-		ppu.screen_tex = (uint32_t *)vglGetTexDataPointer(GL_TEXTURE_2D);
+		glGenTextures(SCREEN_BUFFERS, screen_gl_tex);
+		for (int i = 0; i < SCREEN_BUFFERS; i++) {
+			glBindTexture(GL_TEXTURE_2D, screen_gl_tex[i]);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GB_SCREEN_W, GB_SCREEN_H, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+		}
+		ppu.screen_tex = (uint32_t *)malloc(GB_SCREEN_W * GB_SCREEN_H * 4);
 	}
 	if (emu.debug_ppu && ppu.dbg_tex == NULL) {
-		glGenTextures(1, &ppu_dbg_gl_tex);
-		glBindTexture(GL_TEXTURE_2D, ppu_dbg_gl_tex);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 128, 192, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-		ppu.dbg_tex = (uint32_t *)vglGetTexDataPointer(GL_TEXTURE_2D);
+		glGenTextures(SCREEN_BUFFERS, ppu_dbg_gl_tex);
+		for (int i = 0; i < SCREEN_BUFFERS; i++) {
+			glBindTexture(GL_TEXTURE_2D, ppu_dbg_gl_tex[i]);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 128, 192, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+		}
+		ppu.dbg_tex = (uint32_t *)malloc(128 * 192 * 4);
 	}
 	vglUseVram(GL_TRUE);
 	
