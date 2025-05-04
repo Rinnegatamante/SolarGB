@@ -59,6 +59,13 @@ int main(int argc, char *argv[]) {
 	emu.opts.serial_port_enabled = 1;
 	emu.opts.frametime_log = 1;
 	
+	// Load emulator options
+	FILE *f = fopen(OPTIONS_FILE, "rb");
+	if (f) {
+		fread(&emu.opts, 1, sizeof(opt_t), f);
+		fclose(f);
+	}
+	
 	// Scan roms folder and keep only .gb files
 	SceUID d = sceIoDopen(ROM_FOLDER);
 	SceIoDirent dent;
@@ -90,6 +97,11 @@ int main(int argc, char *argv[]) {
 			}
 			if ((pad.buttons & SCE_CTRL_LTRIGGER) && (!(oldpad & SCE_CTRL_LTRIGGER))) {
 				show_options = !show_options;
+				if (!show_options) {
+					f = fopen(OPTIONS_FILE, "wb");
+					fwrite(&emu.opts, 1, sizeof(opt_t), f);
+					fclose(f);
+				}
 			}
 			vglSwapBuffers(GL_FALSE);
 			oldpad = pad.buttons;

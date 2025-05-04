@@ -7,6 +7,7 @@ extern "C" {
 
 #define EMU_VERSION "0.1"
 #define ROM_FOLDER "ux0:data/LunarGB/roms/"
+#define OPTIONS_FILE "ux0:data/LunarGB/options.bin"
 
 #define HOST_SCREEN_W (960)
 #define HOST_SCREEN_H (544)
