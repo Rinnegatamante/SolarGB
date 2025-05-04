@@ -35,7 +35,8 @@ int emu_main (unsigned int argc, void *argv) {
 	cpu_init();
 	timer_init();
 	emu.state = EMU_RUNNING;
-	
+	emu.frametime_tick = sceKernelGetProcessTimeLow();
+
 	while (emu.state != EMU_NOT_RUNNING) {
 		if (emu.state == EMU_PAUSED) {
 			sceKernelDelayThread(100);
@@ -56,6 +57,7 @@ int main(int argc, char *argv[]) {
 	emu.debug_log = 0;
 	emu.debug_ppu = 1;
 	emu.serial_port_enabled = 1;
+	emu.frametime_log = 1;
 	
 	// Scan roms folder and keep only .gb files
 	SceUID d = sceIoDopen(ROM_FOLDER);

@@ -277,6 +277,11 @@ void ppu_hblank() {
 			}
 			ppu.draw_frame = ppu.cur_frame % SCREEN_BUFFERS;
 			ppu.cur_frame++;
+			if (emu.frametime_log) {
+				uint32_t tick = sceKernelGetProcessTimeLow();
+				sceClibPrintf("Frame processed in %d ms\n", (tick - emu.frametime_tick) / 1000);
+				emu.frametime_tick = tick;
+			}
 		} else {
 			LCD_SET_MODE(MODE_OAM);
 		}

@@ -24,6 +24,8 @@ typedef struct {
 	uint8_t debug_log; // Log debug info on system console
 	uint8_t debug_ppu; // Show PPU data on screen
 	uint8_t serial_port_enabled; // Log serial port output to system console
+	uint8_t frametime_log; // Log time took to process a frame
+	uint32_t frametime_tick;
 	uint8_t state;
 } emu_t;
 
