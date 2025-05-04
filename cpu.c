@@ -289,10 +289,7 @@ void cpu_init() {
 	cpu.regs.H = 0x01;
 	cpu.regs.L = 0x4D;
 	cpu.regs.SP = 0xFFFE;
-	cpu.regs.IE = 0x00;
-	cpu.fetched_data = 0;
-	cpu.mem_dest = 0;
-	cpu.use_mem_dest = 0;
+	cpu.regs.IE = 0;
 	cpu.master_interrupts = 0;
 	cpu.interrupts = 0x00;
 	cpu.enable_interrupts = 0;
@@ -1010,7 +1007,7 @@ static const char *reg_names[] = {
 	[RT_HL] = "HL",	
 };
 
-// Instructions logging function
+// Instructions logging functions
 static const char *cpu_name_funcs[] = {
 	[IN_NOP] = "NOP",
 	[IN_LD] = "LD",
@@ -1049,67 +1046,84 @@ static const char *cpu_name_funcs[] = {
 	[IN_HALT] = "HALT",
 };
 static char _instr_str[32];
-static void cpu_stringify_instr() {
-	switch (cpu.instr->addr_mode) {
-	case AM_R_D16:
-	case AM_R_A16:
-		sprintf(_instr_str, "%s %s,0x%04X", cpu_name_funcs[cpu.instr->type], reg_names[cpu.instr->reg1], cpu.fetched_data);
-		break;
-	case AM_R_R:
-		sprintf(_instr_str, "%s %s,%s", cpu_name_funcs[cpu.instr->type], reg_names[cpu.instr->reg1], reg_names[cpu.instr->reg2]);
-		break;
-	case AM_MR_R:
-		sprintf(_instr_str, "%s (%s),%s", cpu_name_funcs[cpu.instr->type], reg_names[cpu.instr->reg1], reg_names[cpu.instr->reg2]);
-		break;
-	case AM_R:
-		sprintf(_instr_str, "%s %s", cpu_name_funcs[cpu.instr->type], reg_names[cpu.instr->reg1]);
-		break;
-	case AM_R_D8:
-	case AM_R_A8:
-		sprintf(_instr_str, "%s %s,0x%02X", cpu_name_funcs[cpu.instr->type], reg_names[cpu.instr->reg1], cpu.fetched_data & 0xFF);
-		break;
-	case AM_R_MR:
-		sprintf(_instr_str, "%s %s,(%s)", cpu_name_funcs[cpu.instr->type], reg_names[cpu.instr->reg1], reg_names[cpu.instr->reg2]);
-		break;
-	case AM_R_HLI:
-		sprintf(_instr_str, "%s %s,(%s+)", cpu_name_funcs[cpu.instr->type], reg_names[cpu.instr->reg1], reg_names[cpu.instr->reg2]);
-		break;
-	case AM_R_HLD:
-		sprintf(_instr_str, "%s %s,(%s-)", cpu_name_funcs[cpu.instr->type], reg_names[cpu.instr->reg1], reg_names[cpu.instr->reg2]);
-		break;
-	case AM_HLI_R:
-		sprintf(_instr_str, "%s (%s+),%s", cpu_name_funcs[cpu.instr->type], reg_names[cpu.instr->reg1], reg_names[cpu.instr->reg2]);
-		break;
-	case AM_HLD_R:
-		sprintf(_instr_str, "%s (%s-),%s", cpu_name_funcs[cpu.instr->type], reg_names[cpu.instr->reg1], reg_names[cpu.instr->reg2]);
-		break;
-	case AM_A8_R:
-		sprintf(_instr_str, "%s 0x%02X,%s", cpu_name_funcs[cpu.instr->type], bus_read(cpu.regs.PC - 1), reg_names[cpu.instr->reg2]);
-		break;
-	case AM_HL_SPR:
-		sprintf(_instr_str, "%s (%s),SP+%d", cpu_name_funcs[cpu.instr->type], reg_names[cpu.instr->reg1], cpu.fetched_data & 0xFF);
-		break;
-	case AM_D16:
-		sprintf(_instr_str, "%s 0x%04X", cpu_name_funcs[cpu.instr->type], cpu.fetched_data);
-		break;
-	case AM_D8:
-		sprintf(_instr_str, "%s 0x%02X", cpu_name_funcs[cpu.instr->type], cpu.fetched_data & 0xFF);
-		break;
-	case AM_D16_R:
-	case AM_A16_R:
-		sprintf(_instr_str, "%s (0x%04X),%s", cpu_name_funcs[cpu.instr->type], cpu.fetched_data, reg_names[cpu.instr->reg2]);
-		break;
-	case AM_MR_D8:
-		sprintf(_instr_str, "%s (%s),0x%02X", cpu_name_funcs[cpu.instr->type], reg_names[cpu.instr->reg1], cpu.fetched_data & 0xFF);
-		break;
-	case AM_MR:
-		sprintf(_instr_str, "%s (%s)", cpu_name_funcs[cpu.instr->type], reg_names[cpu.instr->reg1]);
-		break;
-	default:
-		strcpy(_instr_str, cpu_name_funcs[cpu.instr->type]);
-		break;
-	}
+void _LOG_AM_R_D16() {
+	sprintf(_instr_str, "%s %s,0x%04X", cpu_name_funcs[cpu.instr->type], reg_names[cpu.instr->reg1], cpu.fetched_data);
 }
+void _LOG_AM_R_R() {
+	sprintf(_instr_str, "%s %s,%s", cpu_name_funcs[cpu.instr->type], reg_names[cpu.instr->reg1], reg_names[cpu.instr->reg2]);
+}
+void _LOG_AM_MR_R() {
+	sprintf(_instr_str, "%s (%s),%s", cpu_name_funcs[cpu.instr->type], reg_names[cpu.instr->reg1], reg_names[cpu.instr->reg2]);
+}
+void _LOG_AM_R() {
+	sprintf(_instr_str, "%s %s", cpu_name_funcs[cpu.instr->type], reg_names[cpu.instr->reg1]);
+}
+void _LOG_AM_R_D8() {
+	sprintf(_instr_str, "%s %s,0x%02X", cpu_name_funcs[cpu.instr->type], reg_names[cpu.instr->reg1], cpu.fetched_data & 0xFF);
+}
+void _LOG_AM_R_MR() {
+	sprintf(_instr_str, "%s %s,(%s)", cpu_name_funcs[cpu.instr->type], reg_names[cpu.instr->reg1], reg_names[cpu.instr->reg2]);
+}
+void _LOG_AM_R_HLI() {
+	sprintf(_instr_str, "%s %s,(%s+)", cpu_name_funcs[cpu.instr->type], reg_names[cpu.instr->reg1], reg_names[cpu.instr->reg2]);
+}
+void _LOG_AM_R_HLD() {
+	sprintf(_instr_str, "%s %s,(%s-)", cpu_name_funcs[cpu.instr->type], reg_names[cpu.instr->reg1], reg_names[cpu.instr->reg2]);
+}
+void _LOG_AM_HLI_R() {
+	sprintf(_instr_str, "%s (%s+),%s", cpu_name_funcs[cpu.instr->type], reg_names[cpu.instr->reg1], reg_names[cpu.instr->reg2]);
+}
+void _LOG_AM_HLD_R() {
+	sprintf(_instr_str, "%s (%s-),%s", cpu_name_funcs[cpu.instr->type], reg_names[cpu.instr->reg1], reg_names[cpu.instr->reg2]);
+}
+void _LOG_AM_A8_R() {
+	sprintf(_instr_str, "%s 0x%02X,%s", cpu_name_funcs[cpu.instr->type], bus_read(cpu.regs.PC - 1), reg_names[cpu.instr->reg2]);
+}
+void _LOG_AM_HL_SPR() {
+	sprintf(_instr_str, "%s (%s),SP+%d", cpu_name_funcs[cpu.instr->type], reg_names[cpu.instr->reg1], cpu.fetched_data & 0xFF);
+}
+void _LOG_AM_D16() {
+	sprintf(_instr_str, "%s 0x%04X", cpu_name_funcs[cpu.instr->type], cpu.fetched_data);
+}
+void _LOG_AM_D8() {
+	sprintf(_instr_str, "%s 0x%02X", cpu_name_funcs[cpu.instr->type], cpu.fetched_data & 0xFF);
+}
+void _LOG_AM_D16_R() {
+	sprintf(_instr_str, "%s (0x%04X),%s", cpu_name_funcs[cpu.instr->type], cpu.fetched_data, reg_names[cpu.instr->reg2]);
+}
+void _LOG_AM_MR_D8() {
+	sprintf(_instr_str, "%s (%s),0x%02X", cpu_name_funcs[cpu.instr->type], reg_names[cpu.instr->reg1], cpu.fetched_data & 0xFF);
+}
+void _LOG_AM_MR() {
+	sprintf(_instr_str, "%s (%s)", cpu_name_funcs[cpu.instr->type], reg_names[cpu.instr->reg1]);
+}
+void _LOG_AM_IMP() {
+	strcpy(_instr_str, cpu_name_funcs[cpu.instr->type]);
+}
+func_t instr_log_funcs[] = {
+	[AM_IMP] = _LOG_AM_IMP,
+	[AM_R_D16] = _LOG_AM_R_D16,
+	[AM_R_A16] = _LOG_AM_R_D16,
+	[AM_R_R] = _LOG_AM_R_R,
+	[AM_MR_R] = _LOG_AM_MR_R,
+	[AM_R] = _LOG_AM_R,
+	[AM_R_D8] = _LOG_AM_R_D8,
+	[AM_R_A8] = _LOG_AM_R_D8,
+	[AM_R_MR] = _LOG_AM_R_MR,
+	[AM_R_HLI] = _LOG_AM_R_HLI,
+	[AM_R_HLD] = _LOG_AM_R_HLD,
+	[AM_HLI_R] = _LOG_AM_HLI_R,
+	[AM_HLD_R] = _LOG_AM_HLD_R,
+	[AM_A8_R] = _LOG_AM_A8_R,
+	[AM_HL_SPR] = _LOG_AM_HL_SPR,
+	[AM_D16] = _LOG_AM_D16,
+	[AM_D8] = _LOG_AM_D8,
+	[AM_D16_R] = _LOG_AM_D16_R,
+	[AM_A16_R] = _LOG_AM_D16_R,
+	[AM_MR_D8] = _LOG_AM_MR_D8,
+	[AM_MR] = _LOG_AM_MR,
+};
+#define cpu_stringify_instr() instr_log_funcs[cpu.instr->addr_mode]()
 
 void cpu_step() {
 	if (cpu.halted) {
