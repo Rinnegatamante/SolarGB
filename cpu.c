@@ -949,7 +949,7 @@ void _IN_SCF() {
 void _IN_CCF() {
 	CPU_SET_FLAG(FLAG_N, 0);
 	CPU_SET_FLAG(FLAG_H, 0);
-	CPU_SET_FLAG(FLAG_C, CPU_FLAG_C_SET);
+	CPU_SET_FLAG(FLAG_C, CPU_FLAG_C_SET ^ 1);
 }
 void _IN_HALT() {
 	cpu.halted = 1;
