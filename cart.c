@@ -2,9 +2,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include "bus.h"
 #include "cart.h"
 
-cart_t rom;
+cart_t rom = {};
 
 typedef struct {
 	char tag[3];
@@ -259,7 +260,51 @@ const char *cart_types[] = {
 	[0xFF] = "HuC1+RAM+BATTERY",
 };
 
+static void cart_init_ram_banks() {
+	for (int i = 0; i < 16; i++) {
+		if (rom.ram_banks[i]) {
+			free(rom.ram_banks[i]);
+		}
+		if (i < rom.ram_size / 8) {
+			rom.ram_banks[i] = (uint8_t *)malloc(0x2000);
+			sceClibMemset(rom.ram_banks[i], 0, 0x2000);
+		} else {
+			rom.ram_banks[i] = NULL;
+		}
+	}
+	
+	rom.ram_bank = rom.ram_banks[0];
+	rom.ram_bank_num = 0;
+	rom.rom_bank_num = 0;
+	rom.rom_bank = rom.data + ADDR_ROM_BANK_1;
+}
+
+static void cart_load_battery() {
+	char path[256];
+	sprintf(path, "%s.battery", rom.fname);
+	FILE *f = fopen(path, "rb");
+	if (f) {
+		fread(rom.ram_banks[0], 1, 0x2000, f);
+		fclose(f);
+	}
+}
+
+void cart_save_battery() {
+	if (rom.ram_banks[rom.ram_bank_num]) {
+		char path[256];
+		sprintf(path, "%s.battery", rom.fname);
+		FILE *f = fopen(path, "wb");
+		fwrite(rom.ram_banks[rom.ram_bank_num], 1, 0x2000, f);
+		fclose(f);
+		rom.save_battery = 0;
+	}
+}
+
 void cart_load(const char *path) {
+	strcpy(rom.fname, path);
+	if (rom.data) {
+		free(rom.data);
+	}
 	FILE *f = fopen(path, "rb");
 	fseek(f, 0, SEEK_END);
 	size_t sz = ftell(f);
@@ -283,6 +328,8 @@ void cart_load(const char *path) {
 	} else {
 		strcpy(rom.licensee, lic_db[rom.data[CART_LIC_CODE]]);
 	}
+	
+	// Init RAM
 	if (strstr(cart_types[rom.type], "RAM")) {
 		switch (rom.data[CART_RAM_SIZE]) {
 		case 0:
@@ -307,6 +354,22 @@ void cart_load(const char *path) {
 			break;
 		}
 	}
+	cart_init_ram_banks();
+	
+	// Parsing battery/mapper info
+	rom.save_battery = 0;
+	if (strstr(cart_types[rom.type], "MBC1")) {
+		rom.mbc1 = 1;
+	} else {
+		rom.mbc1 = 0;
+	}
+	if (strstr(cart_types[rom.type], "BATTERY")) {
+		rom.battery = 1;
+		cart_load_battery();
+	} else {
+		rom.battery = 0;
+	}
+	
 	
 	// Header checksum check
 	uint16_t x;

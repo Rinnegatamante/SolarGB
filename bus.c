@@ -89,6 +89,35 @@ void lcd_sp2_write(uint16_t addr, uint8_t val) {
 	lcd.sp2_cols[2] = ppu.cols[(v >> 4) & 0x03];
 	lcd.sp2_cols[3] = ppu.cols[(v >> 6) & 0x03];
 }
+void cart_ram_enable_write(uint16_t addr, uint8_t val) {
+	rom.ram_enabled = ((val & 0x0F) == 0x0A);
+}
+void cart_rom_bank_swap_write(uint16_t addr, uint8_t val) {
+	rom.rom_bank_num = val & 0x1F;
+	rom.rom_bank = rom.data + (ADDR_ROM_BANK_1 * rom.rom_bank_num);
+}
+void cart_ram_bank_swap_write(uint16_t addr, uint8_t val) {
+	rom.ram_bank_num = val & 0x03;
+	rom.ram_bank = rom.ram_banks[rom.ram_bank_num];
+	if (rom.ram_banking && rom.save_battery) {
+		cart_save_battery();
+	}
+}
+void cart_ram_bank_mode_write(uint16_t addr, uint8_t val) {
+	rom.banking_mode = val & 1;
+	rom.ram_banking = rom.banking_mode;
+	if (rom.ram_banking && rom.save_battery) {
+		cart_save_battery();
+	}
+}
+void cart_ram_write(uint16_t addr, uint8_t val) {
+	if (rom.ram_enabled && rom.ram_banks[rom.ram_bank_num] != NULL) {
+		rom.ram_bank[addr - 0xA000] = val;
+		if (rom.battery) {
+			rom.save_battery = 1;
+		}
+	}
+}
 bus_wfuncs_t bus_write_funcs[0x10000] = {};
 
 // Bus read functions
@@ -168,14 +197,41 @@ uint8_t lcd_read(uint16_t addr) {
 uint8_t cart_read(uint16_t addr) {
 	return rom.data[addr];
 }
+uint8_t cart_ram_read(uint16_t addr) {
+	if (!rom.ram_enabled || rom.ram_banks[rom.ram_bank_num] == NULL) {
+		return 0xFF;
+	}
+	
+	return rom.ram_banks[rom.ram_bank_num][addr - 0xA000];
+}
+uint8_t cart_rom_bank_read(uint16_t addr) {
+	return rom.rom_bank[addr - 0x4000];
+}
 bus_rfuncs_t bus_read_funcs[0x10000] = {};
 void bus_init() {
 	serial_data[0] = serial_data[1] = 0;
 	
 	// ROM data
 	for (int i = 0; i < ADDR_CHR_RAM; i++) {
-		bus_write_funcs[i] = null_write;
-		bus_read_funcs[i] = cart_read;
+		if (rom.mbc1) {
+			if (i < 0x2000) {
+				bus_write_funcs[i] = cart_ram_enable_write;
+			} else if (i < ADDR_ROM_BANK_1) {
+				bus_write_funcs[i] = cart_rom_bank_swap_write;
+			} else if (i < 0x6000) {
+				bus_write_funcs[i] = cart_ram_bank_swap_write;
+			} else {
+				bus_write_funcs[i] = cart_ram_bank_mode_write;
+			}
+			if (i < ADDR_ROM_BANK_1) {
+				bus_read_funcs[i] = cart_read;
+			} else {
+				bus_read_funcs[i] = cart_rom_bank_read;
+			}
+		} else {
+			bus_write_funcs[i] = null_write;
+			bus_read_funcs[i] = cart_read;
+		}
 	}
 	// Char/Map data
 	for (int i = ADDR_CHR_RAM; i < ADDR_CART_RAM; i++) {
@@ -184,8 +240,8 @@ void bus_init() {
 	}
 	// Cartridge RAM
 	for (int i = ADDR_CART_RAM; i < ADDR_RAM_BANK_0; i++) {
-		bus_write_funcs[i] = null_write;
-		bus_read_funcs[i] = cart_read;
+		bus_write_funcs[i] = cart_ram_write;
+		bus_read_funcs[i] = cart_ram_read;
 	}
 	// Working RAM
 	for (int i = ADDR_RAM_BANK_0; i < ADDR_ECHO_RAM; i++) {

@@ -30,11 +30,24 @@ typedef struct {
 	uint32_t ram_size;
 	char name[17];
 	char licensee[64];
+	char fname[256];
+	uint8_t mbc1;
+	uint8_t ram_enabled;
+	uint8_t ram_banking;
+	uint8_t *rom_bank;
+	uint8_t *ram_bank;
+	uint8_t *ram_banks[16];
+	uint8_t banking_mode;
+	uint8_t rom_bank_num;
+	uint8_t ram_bank_num;
+	uint8_t battery;
+	uint8_t save_battery;
 } cart_t;
 
 extern cart_t rom;
 
 void cart_load(const char *path);
+void cart_save_battery();
 
 #ifdef __cplusplus
 }
