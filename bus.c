@@ -96,6 +96,10 @@ void cart_rom_bank_swap_write(uint16_t addr, uint8_t val) {
 	rom.rom_bank_num = val & 0x1F;
 	rom.rom_bank = rom.data + (ADDR_ROM_BANK_1 * rom.rom_bank_num);
 }
+void cart_mbc3_rom_bank_swap_write(uint16_t addr, uint8_t val) {
+	rom.rom_bank_num = val & 0x7F;
+	rom.rom_bank = rom.data + (ADDR_ROM_BANK_1 * rom.rom_bank_num);
+}
 void cart_ram_bank_swap_write(uint16_t addr, uint8_t val) {
 	rom.ram_bank_num = val & 0x03;
 	rom.ram_bank = rom.ram_banks[rom.ram_bank_num];
@@ -103,9 +107,17 @@ void cart_ram_bank_swap_write(uint16_t addr, uint8_t val) {
 		cart_save_battery();
 	}
 }
+void cart_mbc3_ram_bank_swap_write(uint16_t addr, uint8_t val) {
+	rom.ram_bank_num = val & 0x03;
+	rom.rtc_reg_num = (val >> 3) & 0x03;
+	rom.ram_banking = rom.rtc_reg_num == 0;
+	rom.ram_bank = rom.ram_banks[rom.ram_bank_num];
+	if (rom.ram_banking && rom.save_battery) {
+		cart_save_battery();
+	}
+}
 void cart_ram_bank_mode_write(uint16_t addr, uint8_t val) {
-	rom.banking_mode = val & 1;
-	rom.ram_banking = rom.banking_mode;
+	rom.ram_banking = val & 1;
 	if (rom.ram_banking && rom.save_battery) {
 		cart_save_battery();
 	}
@@ -117,6 +129,21 @@ void cart_ram_write(uint16_t addr, uint8_t val) {
 			rom.save_battery = 1;
 		}
 	}
+}
+void cart_mbc3_ram_write(uint16_t addr, uint8_t val) {
+	if (rom.ram_enabled) {
+		if (rom.ram_banking) {
+			rom.ram_bank[addr - 0xA000] = val;
+			if (rom.battery) {
+				rom.save_battery = 1;
+			}
+		} else {
+			((uint8_t *)&rom.rtc_regs)[rom.rtc_reg_num] = val;
+		}
+	}
+}
+void clock_data_write(uint16_t addr, uint8_t val) {
+	// TODO
 }
 bus_wfuncs_t bus_write_funcs[0x10000] = {};
 
@@ -201,8 +228,16 @@ uint8_t cart_ram_read(uint16_t addr) {
 	if (!rom.ram_enabled || rom.ram_banks[rom.ram_bank_num] == NULL) {
 		return 0xFF;
 	}
-	
 	return rom.ram_banks[rom.ram_bank_num][addr - 0xA000];
+}
+uint8_t cart_mbc3_ram_read(uint16_t addr) {
+	if (!rom.ram_enabled) {
+		return 0xFF;
+	}
+	if (rom.ram_banking) {
+		return rom.ram_banks[rom.ram_bank_num][addr - 0xA000];
+	}
+	return ((uint8_t *)&rom.rtc_regs)[rom.rtc_reg_num];
 }
 uint8_t cart_rom_bank_read(uint16_t addr) {
 	return rom.rom_bank[addr - 0x4000];
@@ -237,14 +272,23 @@ void bus_init() {
 		MAP_R_RANGE(0, ADDR_ROM_BANK_1, cart_read);
 		MAP_R_RANGE(ADDR_ROM_BANK_1, ADDR_CHR_RAM, cart_rom_bank_read);
 	} else if (rom.mbc3) {
-		
+		MAP_W_RANGE(0, 0x2000, cart_ram_enable_write);
+		MAP_W_RANGE(0x2000, 0x4000, cart_mbc3_rom_bank_swap_write);
+		MAP_W_RANGE(0x4000, 0x6000, cart_mbc3_ram_bank_swap_write);
+		MAP_W_RANGE(0x6000, ADDR_CHR_RAM, clock_data_write);
+		MAP_R_RANGE(0, ADDR_ROM_BANK_1, cart_read);
+		MAP_R_RANGE(ADDR_ROM_BANK_1, ADDR_CHR_RAM, cart_rom_bank_read);
 	} else {
 		MAP_RW_RANGE(0, ADDR_CHR_RAM, cart_read, null_write);
 	}
 	// Char/Map data
 	MAP_RW_RANGE(ADDR_CHR_RAM, ADDR_CART_RAM, ppu_vram_read, ppu_vram_write);
 	// Cartridge RAM
-	MAP_RW_RANGE(ADDR_CART_RAM, ADDR_RAM_BANK_0, cart_ram_read, cart_ram_write);
+	if (rom.mbc3) {
+		MAP_RW_RANGE(ADDR_CART_RAM, ADDR_RAM_BANK_0, cart_mbc3_ram_read, cart_mbc3_ram_write);
+	} else {
+		MAP_RW_RANGE(ADDR_CART_RAM, ADDR_RAM_BANK_0, cart_ram_read, cart_ram_write);
+	}
 	// Working RAM
 	MAP_RW_RANGE(ADDR_RAM_BANK_0, ADDR_ECHO_RAM, wram_read, wram_write);
 	// Reserved echo RAM

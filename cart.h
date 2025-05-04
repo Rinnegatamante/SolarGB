@@ -24,6 +24,14 @@ enum {
 };
 
 typedef struct {
+	uint8_t s;
+	uint8_t m;
+	uint8_t h;
+	uint8_t day_count_low;
+	uint8_t day_count_high;
+} rtc_t;
+
+typedef struct {
 	uint8_t *data;
 	size_t size;
 	uint8_t type;
@@ -32,16 +40,18 @@ typedef struct {
 	char licensee[64];
 	char fname[256];
 	uint8_t mbc1;
+	uint8_t mbc3;
 	uint8_t ram_enabled;
 	uint8_t ram_banking;
 	uint8_t *rom_bank;
 	uint8_t *ram_bank;
 	uint8_t *ram_banks[16];
-	uint8_t banking_mode;
 	uint8_t rom_bank_num;
 	uint8_t ram_bank_num;
+	uint8_t rtc_reg_num;
 	uint8_t battery;
 	uint8_t save_battery;
+	rtc_t rtc_regs;
 } cart_t;
 
 extern cart_t rom;

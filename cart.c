@@ -276,6 +276,7 @@ static void cart_init_ram_banks() {
 	rom.ram_bank = rom.ram_banks[0];
 	rom.ram_bank_num = 0;
 	rom.rom_bank_num = 0;
+	rom.rtc_reg_num = 0;
 	rom.rom_bank = rom.data + ADDR_ROM_BANK_1;
 }
 
@@ -362,6 +363,11 @@ void cart_load(const char *path) {
 		rom.mbc1 = 1;
 	} else {
 		rom.mbc1 = 0;
+	}
+	if (strstr(cart_types[rom.type], "MBC3")) {
+		rom.mbc3 = 1;
+	} else {
+		rom.mbc3 = 0;
 	}
 	if (strstr(cart_types[rom.type], "BATTERY")) {
 		rom.battery = 1;
