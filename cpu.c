@@ -83,7 +83,7 @@ static instr_t instrs[] = {
 	[0x32] = {.type = IN_LD, .addr_mode = AM_HLD_R, .reg1 = RT_HL, .reg2 = RT_A},
 	[0x33] = {.type = IN_INC, .addr_mode = AM_R, .reg1 = RT_SP},
 	[0x34] = {.type = IN_INC, .addr_mode = AM_MR, .reg1 = RT_HL},
-	[0x35] = {.type = IN_DEC, .addr_mode = AM_R, .reg1 = RT_HL},
+	[0x35] = {.type = IN_DEC, .addr_mode = AM_MR, .reg1 = RT_HL},
 	[0x36] = {.type = IN_LD, .addr_mode = AM_MR_D8, .reg1 = RT_HL},
 	[0x37] = {.type = IN_SCF},
 	[0x38] = {.type = IN_JR, .addr_mode = AM_D8, .cnd = CT_C},
