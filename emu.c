@@ -54,10 +54,10 @@ int main(int argc, char *argv[]) {
 #endif
 
 	// Initialize default emulator settings
-	emu.debug_log = 0;
-	emu.debug_ppu = 1;
-	emu.serial_port_enabled = 1;
-	emu.frametime_log = 1;
+	emu.opts.debug_log = 0;
+	emu.opts.debug_ppu = 1;
+	emu.opts.serial_port_enabled = 1;
+	emu.opts.frametime_log = 1;
 	
 	// Scan roms folder and keep only .gb files
 	SceUID d = sceIoDopen(ROM_FOLDER);
@@ -115,10 +115,10 @@ int main(int argc, char *argv[]) {
 				sceCtrlPeekBufferPositive(0, &pad, 1);
 				if ((pad.buttons & SCE_CTRL_LTRIGGER) && (!(oldpad & SCE_CTRL_LTRIGGER))) {
 					emu.state = EMU_PAUSED;
-				}
-				oldpad = pad.buttons;
+				}	
+				oldpad = emu.buttons = pad.buttons;
 				ppu_draw_last_frame();
-				if (emu.debug_ppu) {
+				if (emu.opts.debug_ppu) {
 					ppu_show_dbg_tex();
 				}
 			}

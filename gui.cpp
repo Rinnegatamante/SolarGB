@@ -26,10 +26,10 @@ void gui_emu_options() {
 	ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiSetCond_Always);
 	ImGui::SetNextWindowSize(ImVec2(HOST_SCREEN_W, HOST_SCREEN_H), ImGuiSetCond_Always);
 	ImGui::Begin(titlebar, NULL, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse);
-	ImGui::Checkbox("Verbose CPU interpreter logging", (bool *)&emu.debug_log);
-	ImGui::Checkbox("Show PPU Vram content on screen", (bool *)&emu.debug_ppu);
-	ImGui::Checkbox("Frametime logging", (bool *)&emu.frametime_log);
-	ImGui::Checkbox("Enable I/O Serial Port logging", (bool *)&emu.serial_port_enabled);
+	ImGui::Checkbox("Verbose CPU interpreter logging", (bool *)&emu.opts.debug_log);
+	ImGui::Checkbox("Show PPU Vram content on screen", (bool *)&emu.opts.debug_ppu);
+	ImGui::Checkbox("Frametime logging", (bool *)&emu.opts.frametime_log);
+	ImGui::Checkbox("Enable I/O Serial Port logging", (bool *)&emu.opts.serial_port_enabled);
 	ImGui::End();
 	glViewport(0, 0, static_cast<int>(ImGui::GetIO().DisplaySize.x), static_cast<int>(ImGui::GetIO().DisplaySize.y));
 	ImGui::Render();

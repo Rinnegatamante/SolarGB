@@ -20,12 +20,33 @@ enum {
 	EMU_PAUSED
 };
 
+// Buttons bitmask
+enum {
+	BTN_START  = 0xF7,
+	BTN_SELECT = 0xFB,
+	BTN_B      = 0xFD,
+	BTN_A      = 0xFE,
+};
+
+// Directional buttons bitmask
+enum {
+	DIR_DOWN   = 0xF7,
+	DIR_UP     = 0xFB,
+	DIR_LEFT   = 0xFD,
+	DIR_RIGHT  = 0xFE,
+};
+
 typedef struct {
 	uint8_t debug_log; // Log debug info on system console
 	uint8_t debug_ppu; // Show PPU data on screen
 	uint8_t serial_port_enabled; // Log serial port output to system console
 	uint8_t frametime_log; // Log time took to process a frame
+} opt_t;
+
+typedef struct {
+	opt_t opts;
 	uint32_t frametime_tick;
+	uint32_t buttons;
 	uint8_t state;
 } emu_t;
 

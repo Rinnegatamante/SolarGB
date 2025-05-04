@@ -20,11 +20,13 @@
 #include "bus.h"
 #include "cpu.h"
 #include "dma.h"
+#include "emu.h"
 #include "ppu.h"
 #include "ram.h"
 #include "timer.h"
 
 static uint8_t serial_data[2] = {};
+static uint8_t keys = 0;
 
 // Bus write functions
 void null_write(uint16_t addr, uint8_t val) {}
@@ -64,6 +66,9 @@ void cpu_intr_write(uint16_t addr, uint8_t val) {
 	cpu.interrupts = val;
 }
 void lcd_write(uint16_t addr, uint8_t val) {
+void gamepad_write(uint16_t addr, uint8_t val) {
+	keys = val;
+}
 	uint8_t *p = (uint8_t *)&lcd;
 	p[addr - 0xFF40] = val;
 	uint8_t v;
@@ -135,6 +140,38 @@ uint8_t timer_tac_read(uint16_t addr) {
 uint8_t cpu_intr_read(uint16_t addr) {
 	return cpu.interrupts;
 }
+uint8_t gamepad_read(uint16_t addr) {
+	uint8_t res = 0xCF;
+	if ((keys & 0x10) == 0x10) {
+		if ((emu.buttons & SCE_CTRL_CROSS) == SCE_CTRL_CROSS) {
+			res &= BTN_A;
+		}
+		if ((emu.buttons & SCE_CTRL_SQUARE) == SCE_CTRL_SQUARE) {
+			res &= BTN_B;
+		}
+		if ((emu.buttons & SCE_CTRL_START) == SCE_CTRL_START) {
+			res &= BTN_START;
+		}
+		if ((emu.buttons & SCE_CTRL_SELECT) == SCE_CTRL_SELECT) {
+			res &= BTN_SELECT;
+		}
+	}
+	if ((keys & 0x20) == 0x20) {
+		if ((emu.buttons & SCE_CTRL_UP) == SCE_CTRL_UP) {
+			res &= DIR_UP;
+		}
+		if ((emu.buttons & SCE_CTRL_DOWN) == SCE_CTRL_DOWN) {
+			res &= DIR_DOWN;
+		}
+		if ((emu.buttons & SCE_CTRL_LEFT) == SCE_CTRL_LEFT) {
+			res &= DIR_LEFT;
+		}
+		if ((emu.buttons & SCE_CTRL_RIGHT) == SCE_CTRL_RIGHT) {
+			res &= DIR_RIGHT;
+		}
+	}
+	return res;
+}
 uint8_t lcd_read(uint16_t addr) {
 	uint8_t *p = (uint8_t *)&lcd;
 	return p[addr - 0xFF40];
@@ -182,8 +219,8 @@ void bus_init() {
 		bus_read_funcs[i] = null_read;
 	}
 	// IO Registers
-	bus_write_funcs[0xFF00] = null_write;
-	bus_read_funcs[0xFF00] = null_read;
+	bus_write_funcs[0xFF00] = gamepad_write;
+	bus_read_funcs[0xFF00] = gamepad_read;
 	bus_write_funcs[0xFF01] = serial_write;
 	bus_read_funcs[0xFF01] = serial_read;
 	bus_write_funcs[0xFF02] = serial_write;

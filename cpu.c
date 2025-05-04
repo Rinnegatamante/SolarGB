@@ -1150,7 +1150,7 @@ void cpu_step() {
 		cpu_fetch_data();
 		
 		// Interpreter debugger
-		if (emu.debug_log) {
+		if (emu.opts.debug_log) {
 			char c = CPU_FLAG_C_SET ? 'C' : '-';
 			char z = CPU_FLAG_Z_SET ? 'Z' : '-';
 			char n = CPU_FLAG_N_SET ? 'N' : '-';
@@ -1161,7 +1161,7 @@ void cpu_step() {
 		}
 		
 		// Serial data handling
-		if (emu.serial_port_enabled) {
+		if (emu.opts.serial_port_enabled) {
 			if (bus_read(0xFF02) == 0x81) {
 				uint8_t ch = bus_read(0xFF01);
 				serial_out[serial_len++] = ch;

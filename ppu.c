@@ -227,7 +227,7 @@ void ppu_init() {
 		}
 		ppu.screen_tex = (uint32_t *)malloc(GB_SCREEN_W * GB_SCREEN_H * 4);
 	}
-	if (emu.debug_ppu && ppu.dbg_tex == NULL) {
+	if (emu.opts.debug_ppu && ppu.dbg_tex == NULL) {
 		glGenTextures(SCREEN_BUFFERS, ppu_dbg_gl_tex);
 		for (int i = 0; i < SCREEN_BUFFERS; i++) {
 			glBindTexture(GL_TEXTURE_2D, ppu_dbg_gl_tex[i]);
@@ -287,7 +287,7 @@ void ppu_hblank() {
 			}
 			ppu.draw_frame = ppu.cur_frame % SCREEN_BUFFERS;
 			ppu.cur_frame++;
-			if (emu.frametime_log) {
+			if (emu.opts.frametime_log) {
 				uint32_t tick = sceKernelGetProcessTimeLow();
 				sceClibPrintf("Frame processed in %d ms\n", (tick - emu.frametime_tick) / 1000);
 				emu.frametime_tick = tick;
