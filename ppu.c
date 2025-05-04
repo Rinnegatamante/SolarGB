@@ -18,7 +18,7 @@ lcd_t lcd = {};
 static GLuint screen_gl_tex[SCREEN_BUFFERS], ppu_dbg_gl_tex[SCREEN_BUFFERS];
 
 static inline __attribute__((always_inline)) void ppu_draw_image(GLuint *tex, void *buf, float x, float y, float w, float h, float scale) {
-	glBindTexture(GL_TEXTURE_2D, tex[ppu.cur_frame % SCREEN_BUFFERS]);
+	glBindTexture(GL_TEXTURE_2D, tex[ppu.draw_frame % SCREEN_BUFFERS]);
 	sceClibMemcpy(vglGetTexDataPointer(GL_TEXTURE_2D), buf, w * h * 4);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
@@ -37,6 +37,7 @@ static inline __attribute__((always_inline)) void ppu_draw_image(GLuint *tex, vo
 }
 
 #define ppu_draw_frame() ppu_draw_image(screen_gl_tex, ppu.screen_tex, 100.0f, 56.0f, GB_SCREEN_W, GB_SCREEN_H, 3.0f)
+void ppu_draw_last_frame() { ppu_draw_frame(); }
 
 static void ppu_update_dbg_tile(int n, int x, int y) {
 	for (int tile_y = 0; tile_y < 16; tile_y += 2) {
@@ -231,6 +232,7 @@ void ppu_init() {
 	}
 	vglUseVram(GL_TRUE);
 	
+	ppu.draw_frame = 2;
 	ppu.cur_frame = 0;
 	ppu.lines = 0;
 	ppu.num_sprites = 0;
@@ -273,8 +275,8 @@ void ppu_hblank() {
 			if (LCD_SS_SET(SS_VBLANK)) {
 				CPU_SET_INTERRUPT(IT_LCD_STAT);
 			}
+			ppu.draw_frame = ppu.cur_frame % SCREEN_BUFFERS;
 			ppu.cur_frame++;
-			ppu_draw_frame();
 		} else {
 			LCD_SET_MODE(MODE_OAM);
 		}

@@ -106,6 +106,7 @@ typedef struct spritelist_t {
 
 typedef struct {
 	uint64_t cur_frame;
+	uint8_t draw_frame;
 	uint8_t oam_ram[0x40];
 	uint8_t vram[0x2000];
 	uint32_t lines;
@@ -134,6 +135,8 @@ void ppu_show_dbg_tex();
 #define LCD_SS_SET(x) ((lcd.lcds & x) == x)
 
 #define LCDC_SET(x) ((lcd.lcdc & x) == x)
+
+void ppu_draw_last_frame();
 
 #ifdef __cplusplus
 }

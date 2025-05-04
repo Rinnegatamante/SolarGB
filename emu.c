@@ -28,6 +28,25 @@ void emu_incr_cycles(uint32_t cycles) {
 	}
 }
 
+int emu_main (unsigned int argc, void *argv) {
+	bus_init();
+	ram_init();
+	ppu_init();
+	cpu_init();
+	timer_init();
+	emu.state = EMU_RUNNING;
+	
+	while (emu.state != EMU_NOT_RUNNING) {
+		if (emu.state == EMU_PAUSED) {
+			sceKernelDelayThread(100);
+		} else {
+			cpu_step();
+		}
+	}
+	
+	return sceKernelExitDeleteThread(0);
+}
+
 int main(int argc, char *argv[]) {
 #if 1
 	sceSysmoduleLoadModule(SCE_SYSMODULE_RAZOR_CAPTURE);
@@ -77,32 +96,26 @@ int main(int argc, char *argv[]) {
 		// Main emulator code start
 		char rom_path[512];
 		sprintf(rom_path, "%s%s", ROM_FOLDER, to_start->name);
-		bus_init();
 		cart_load(rom_path);
-		ram_init();
-		ppu_init();
-		cpu_init();
-		timer_init();
-		emu.state = EMU_RUNNING;
-	
+		emu.state = EMU_NOT_RUNNING;
+		SceUID cpu_thread = sceKernelCreateThread("SolarGB", emu_main, 0x40, 0x100000, 0, 0, NULL);
+		sceKernelStartThread(cpu_thread, 0, NULL);
+		while (emu.state == EMU_NOT_RUNNING) {
+			sceKernelDelayThread(100);
+		}
+		
 		while (emu.state != EMU_NOT_RUNNING) {
 			glClear(GL_COLOR_BUFFER_BIT);
 			SceCtrlData pad;
 			if (emu.state == EMU_PAUSED) { // Emulation paused
 				gui_pause_menu();
 			} else { // Emulation active
-				uint64_t work_frame = ppu.cur_frame;
-				while ((work_frame == ppu.cur_frame) && (emu.state == EMU_RUNNING)) {
-					// Perform one CPU step
-					cpu_step();
-
-					// Check if we want to pause the emulator
-					sceCtrlPeekBufferPositive(0, &pad, 1);
-					if ((pad.buttons & SCE_CTRL_LTRIGGER) && (!(oldpad & SCE_CTRL_LTRIGGER))) {
-						emu.state = EMU_PAUSED;
-					}
-					oldpad = pad.buttons;
+				sceCtrlPeekBufferPositive(0, &pad, 1);
+				if ((pad.buttons & SCE_CTRL_LTRIGGER) && (!(oldpad & SCE_CTRL_LTRIGGER))) {
+					emu.state = EMU_PAUSED;
 				}
+				oldpad = pad.buttons;
+				ppu_draw_last_frame();
 				if (emu.debug_ppu) {
 					ppu_show_dbg_tex();
 				}
