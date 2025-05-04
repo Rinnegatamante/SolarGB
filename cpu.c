@@ -536,6 +536,7 @@ void _IN_LD() {
 		CPU_SET_FLAG(FLAG_N, 0);
 		CPU_SET_FLAG(FLAG_H, (r2 & 0x0F) + (cpu.fetched_data & 0x0F) >= 0x10);
 		CPU_SET_FLAG(FLAG_C, (r2 & 0xFF) + (cpu.fetched_data & 0xFF) >= 0x100);
+		cpu_write_reg(cpu.instr->reg1, r2 + (int8_t)cpu.fetched_data);
 	} else {
 		cpu_write_reg(cpu.instr->reg1, cpu.fetched_data);
 	}
