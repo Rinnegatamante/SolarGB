@@ -34,13 +34,6 @@ typedef struct {
 
 extern cart_t rom;
 
-static inline __attribute__((always_inline)) void cart_write(uint16_t addr, uint8_t val) {
-}
-
-static inline __attribute__((always_inline)) uint8_t cart_read(uint16_t addr) {
-	return rom.data[addr];
-}
-
 void cart_load(const char *path);
 
 #ifdef __cplusplus

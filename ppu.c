@@ -17,8 +17,6 @@ lcd_t lcd = {};
 #define SCREEN_BUFFERS (3)
 static GLuint screen_gl_tex[SCREEN_BUFFERS], ppu_dbg_gl_tex[SCREEN_BUFFERS];
 
-static uint32_t ppu_colors[4] = {0xFFFFFFFF, 0xFFAAAAAA, 0xFF555555, 0xFF000000}; 
-
 static inline __attribute__((always_inline)) void ppu_draw_image(GLuint *tex, void *buf, float x, float y, float w, float h, float scale) {
 	glBindTexture(GL_TEXTURE_2D, tex[ppu.cur_frame % SCREEN_BUFFERS]);
 	sceClibMemcpy(vglGetTexDataPointer(GL_TEXTURE_2D), buf, w * h * 4);
@@ -46,7 +44,7 @@ static void ppu_update_dbg_tile(int n, int x, int y) {
 		for (int bit = 7; bit >= 0; bit--) {
 			uint8_t high = (ppu.vram[offs] & (1 << bit)) != 0 ? 2 : 0;
 			uint8_t low = (ppu.vram[offs + 1] & (1 << bit)) != 0 ? 1 : 0;
-			ppu.dbg_tex[x + (7 - bit) + (y + (tile_y / 2)) * 128] = ppu_colors[high | low];
+			ppu.dbg_tex[x + (7 - bit) + (y + (tile_y / 2)) * 128] = ppu.cols[high | low];
 		}
 	}
 }
@@ -201,7 +199,7 @@ func_t ppu_fetch_funcs[] = {
 # define ppu_fetch_pipeline() ppu_fetch_funcs[ppu.fifo.fetch_state]()
 
 static void lcd_init() {
-	lcd.lcdc = 0x91;
+	lcd.lcdc = LCD_ENABLE | BGW_DATA_AREA | BGW_ENABLE;
 	lcd.lcds = 0x00;
 	lcd.scroll_x = lcd.scroll_y = 0;
 	lcd.ly = lcd.ly_cmp = lcd.dma = 0;
@@ -209,7 +207,7 @@ static void lcd_init() {
 	lcd.obj_pal[0] = lcd.obj_pal[1] = 0xFF;
 	lcd.win_x = lcd.win_y = 0;
 	for (int i = 0; i < 4; i++) {
-		lcd.bg_cols[i] = lcd.sp1_cols[i] = lcd.sp2_cols[i] = ppu_colors[i];
+		lcd.bg_cols[i] = lcd.sp1_cols[i] = lcd.sp2_cols[i] = ppu.cols[i];
 	}
 }
 
@@ -242,6 +240,10 @@ void ppu_init() {
 	ppu.fifo.fetch_x = 0;
 	ppu.fifo.fetch_state = FS_TILE;
 	ppu_clear_pipeline();
+	ppu.cols[0] = 0xFFFFFFFF;
+	ppu.cols[1] = 0xFFAAAAAA;
+	ppu.cols[2] = 0xFF555555;
+	ppu.cols[3] = 0xFF000000; 
 	
 	lcd_init();
 	LCD_SET_MODE(MODE_OAM);
@@ -252,12 +254,12 @@ void ppu_init() {
 static inline __attribute__((always_inline)) void ppu_inc_ly() {
 	lcd.ly++;
 	if (lcd.ly == lcd.ly_cmp) {
-		lcd.lcds |= 0x04;
+		lcd.lcds |= SS_LY_EQ_LYC;
 		if (LCD_SS_SET(SS_LYC)) {
 			CPU_SET_INTERRUPT(IT_LCD_STAT);
 		}
 	} else {
-		lcd.lcds &= ~0x04;
+		lcd.lcds &= ~SS_LY_EQ_LYC;
 	}
 }
 
@@ -378,39 +380,5 @@ func_t ppu_mode_funcs[] = {
 
 void ppu_tick() {
 	ppu.lines++;
-	ppu_mode_funcs[lcd.lcds & 0x03]();
-}
-
-void lcd_write(uint16_t addr, uint8_t val) {
-	uint8_t *p = (uint8_t *)&lcd;
-	p[addr - 0xFF40] = val;
-	
-	uint8_t v;
-	switch (addr) {
-	case 0xFF46:
-		dma_start(val);
-		break;
-	case 0xFF47:
-		lcd.bg_cols[0] = ppu_colors[val & 0x03];
-		lcd.bg_cols[1] = ppu_colors[(val >> 2) & 0x03];
-		lcd.bg_cols[2] = ppu_colors[(val >> 4) & 0x03];
-		lcd.bg_cols[3] = ppu_colors[(val >> 6) & 0x03];
-		break;
-	case 0xFF48:
-		v = val & 0b11111100;
-		lcd.sp1_cols[0] = ppu_colors[0];
-		lcd.sp1_cols[1] = ppu_colors[(v >> 2) & 0x03];
-		lcd.sp1_cols[2] = ppu_colors[(v >> 4) & 0x03];
-		lcd.sp1_cols[3] = ppu_colors[(v >> 6) & 0x03];
-		break;
-	case 0xFF49:
-		v = val & 0b11111100;
-		lcd.sp2_cols[0] = ppu_colors[0];
-		lcd.sp2_cols[1] = ppu_colors[(v >> 2) & 0x03];
-		lcd.sp2_cols[2] = ppu_colors[(v >> 4) & 0x03];
-		lcd.sp2_cols[3] = ppu_colors[(v >> 6) & 0x03];
-		break;
-	default:
-		break;
-	}
+	ppu_mode_funcs[lcd.lcds & SS_PPU_MODE]();
 }

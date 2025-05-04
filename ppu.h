@@ -28,12 +28,14 @@ enum {
 	LCD_ENABLE    = 0x80
 };
 
-// LCDS stat modes
+// LCDS bitmask
 enum {
-	SS_HBLANK = 0x08,
-	SS_VBLANK = 0x10,
-	SS_OAM    = 0x20,
-	SS_LYC    = 0x40,	
+	SS_PPU_MODE  = 0x03,
+	SS_LY_EQ_LYC = 0x04,
+	SS_HBLANK    = 0x08,
+	SS_VBLANK    = 0x10,
+	SS_OAM       = 0x20,
+	SS_LYC       = 0x40,	
 };
 
 //Fetch state modes
@@ -111,6 +113,7 @@ typedef struct {
 	uint8_t num_fetched;
 	uint32_t *screen_tex;
 	uint32_t *dbg_tex;
+	uint32_t cols[4];
 	spritelist_t *sprites;
 	spritelist_t sprite_slots[10];
 	sprite_t fetched_sprites[3];
@@ -120,42 +123,12 @@ typedef struct {
 extern ppu_t ppu;
 extern lcd_t lcd;
 
-void lcd_write(uint16_t addr, uint8_t val);
-
-static inline __attribute__((always_inline)) uint8_t lcd_read(uint16_t addr) {
-	uint8_t *p = (uint8_t *)&lcd;
-	return p[addr - 0xFF40];
-}
-
-static inline __attribute__((always_inline)) void ppu_vram_write(uint16_t addr, uint8_t val) {
-	ppu.vram[addr - 0x8000] = val;
-}
-
-static inline __attribute__((always_inline)) uint8_t ppu_vram_read(uint16_t addr) {
-	return ppu.vram[addr - 0x8000];
-}
-
-static inline __attribute__((always_inline)) void ppu_oam_write(uint16_t addr, uint8_t val) {
-	if (addr >= 0xFE00) {
-		addr -= 0xFE00;
-	}
-	
-	ppu.oam_ram[addr] = val;
-}
-
-static inline __attribute__((always_inline)) uint8_t ppu_oam_read(uint16_t addr) {
-	if (addr >= 0xFE00) {
-		addr -= 0xFE00;
-	}
-	return ppu.oam_ram[addr];
-}
-
 void ppu_init();
 void ppu_tick();
 void ppu_show_dbg_tex();
 
 #define LCD_SET_MODE(x) \
-	lcd.lcds &= ~0x03; \
+	lcd.lcds &= ~SS_PPU_MODE; \
 	lcd.lcds |= x;
 
 #define LCD_SS_SET(x) ((lcd.lcds & x) == x)

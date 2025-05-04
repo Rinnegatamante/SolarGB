@@ -9,7 +9,6 @@
 #include "dma.h"
 #include "emu.h"
 #include "gui.h"
-#include "io.h"
 #include "ppu.h"
 #include "ram.h"
 #include "timer.h"
@@ -78,12 +77,12 @@ int main(int argc, char *argv[]) {
 		// Main emulator code start
 		char rom_path[512];
 		sprintf(rom_path, "%s%s", ROM_FOLDER, to_start->name);
+		bus_init();
 		cart_load(rom_path);
 		ram_init();
 		ppu_init();
 		cpu_init();
 		timer_init();
-		io_init();
 		emu.state = EMU_RUNNING;
 	
 		while (emu.state != EMU_NOT_RUNNING) {

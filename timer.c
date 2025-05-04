@@ -43,33 +43,3 @@ void timer_tick() {
 		}
 	}
 }
-
-uint8_t timer_read(uint16_t addr) {
-	switch (addr) {
-	case 0xFF04:
-		return timer.div >> 8;
-	case 0xFF05:
-		return timer.tima;
-	case 0xFF06:
-		return timer.tma;
-	default:
-		return timer.tac;
-	}
-}
-
-void timer_write(uint16_t addr, uint8_t val) {
-	switch (addr) {
-	case 0xFF04:
-		timer.div = 0;
-		break;
-	case 0xFF05:
-		timer.tima = val;
-		break;
-	case 0xFF06:
-		timer.tma = val;
-		break;
-	default:
-		timer.tac = val;
-		break;
-	}	
-}

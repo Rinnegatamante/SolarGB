@@ -12,7 +12,6 @@ CFILES = bus.o \
 	emu.o \
 	dma.o \
 	gui.o \
-	io.o \
 	ppu.o \
 	ram.o \
 	timer.o

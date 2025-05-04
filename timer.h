@@ -15,8 +15,6 @@ typedef struct {
 extern tmr_t timer;
 
 void timer_init();
-uint8_t timer_read(uint16_t addr);
-void timer_write(uint16_t addr, uint8_t val);
 void timer_tick();
 
 #ifdef __cplusplus
