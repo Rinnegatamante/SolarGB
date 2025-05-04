@@ -80,13 +80,16 @@ static inline __attribute__((always_inline)) void ppu_clear_pipeline() {
 // PPU FIFO fetch functions
 void ppu_tile_fetch() {
 	ppu.num_fetched = 0;
-	
-	if (LCDC_SET(BGW_ENABLE)) {
+	if (LCDC_WIN_SET() && ((ppu.fifo.fetch_x + 7) >= lcd.win_x && (ppu.fifo.fetch_x + 7) < (lcd.win_x + GB_SCREEN_H + 14) && lcd.ly >= lcd.win_y && lcd.ly < lcd.win_y + GB_SCREEN_W)) {
+		uint8_t y = ppu.win_line / 8;
+		uint16_t win_map_area = LCDC_SET(WIN_MAP_AREA) ? 0x9C00 : 0x9800;
+		ppu.fifo.bgw_fetch_data[0] = bus_read(win_map_area + ((ppu.fifo.fetch_x + 7 - lcd.win_x) / 8) + (y * 32));
+	} else if (LCDC_SET(BGW_ENABLE)) {
 		uint16_t bg_map_area = LCDC_SET(BG_MAP_AREA) ? 0x9C00: 0x9800;
 		ppu.fifo.bgw_fetch_data[0] = bus_read(bg_map_area + (ppu.fifo.map_x / 8) + ((ppu.fifo.map_y / 8) * 32));
-		if (!(LCDC_SET(BGW_DATA_AREA))) {
-			ppu.fifo.bgw_fetch_data[0] += 128;
-		}
+	}
+	if (!(LCDC_SET(BGW_DATA_AREA))) {
+		ppu.fifo.bgw_fetch_data[0] += 128;
 	}
 	if (LCDC_SET(OBJ_ENABLE) && ppu.sprites) {
 		spritelist_t *s = ppu.sprites;
@@ -239,6 +242,7 @@ void ppu_init() {
 	ppu.lines = 0;
 	ppu.num_sprites = 0;
 	ppu.num_fetched = 0;
+	ppu.win_line = 0;
 	ppu.fifo.line_x = 0;
 	ppu.fifo.pushed_x = 0;
 	ppu.fifo.fetch_x = 0;
@@ -256,6 +260,10 @@ void ppu_init() {
 }
 
 static inline __attribute__((always_inline)) void ppu_inc_ly() {
+	if (LCDC_WIN_SET() && lcd.ly >= lcd.win_y && lcd.ly < (lcd.win_y + GB_SCREEN_H)) {
+		ppu.win_line++;
+	}
+	
 	lcd.ly++;
 	if (lcd.ly == lcd.ly_cmp) {
 		lcd.lcds |= SS_LY_EQ_LYC;
@@ -296,6 +304,7 @@ void ppu_vblank() {
 		if (lcd.ly >= LINES_PER_FRAME) {
 			LCD_SET_MODE(MODE_OAM);
 			lcd.ly = 0;
+			ppu.win_line = 0;
 		}
 		ppu.lines = 0;
 	}

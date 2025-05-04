@@ -112,6 +112,7 @@ typedef struct {
 	uint32_t lines;
 	uint8_t num_sprites;
 	uint8_t num_fetched;
+	uint8_t win_line;
 	uint32_t *screen_tex;
 	uint32_t *dbg_tex;
 	uint32_t cols[4];
@@ -133,8 +134,8 @@ void ppu_show_dbg_tex();
 	lcd.lcds |= x;
 
 #define LCD_SS_SET(x) ((lcd.lcds & x) == x)
-
 #define LCDC_SET(x) ((lcd.lcdc & x) == x)
+#define LCDC_WIN_SET() (LCDC_SET(WIN_ENABLE) && lcd.win_x >= 0 && lcd.win_x <= 166 && lcd.win_y >= 0 && lcd.win_y <= GB_SCREEN_H)
 
 void ppu_draw_last_frame();
 
