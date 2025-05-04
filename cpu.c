@@ -1136,9 +1136,9 @@ void cpu_step() {
 	} else {
 		// Fetch next instruction to execute and move forward program counter
 		uint16_t instr_PC = cpu.regs.PC;
-		cpu.opcode = bus_read(cpu.regs.PC);
+		cpu.opcode = bus_read(cpu.regs.PC++);
 		cpu.instr = &instrs[cpu.opcode];
-		cpu.regs.PC++;
+		emu_incr_cycles(1);
 		
 		// Fetching any required data for the given instruction
 		cpu.mem_dest = 0;
