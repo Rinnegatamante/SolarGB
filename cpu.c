@@ -708,6 +708,7 @@ void _IN_ADC() {
 void _IN_SBC() {
 	uint8_t val = cpu.fetched_data + CPU_FLAG_C_SET;
 	int reg = cpu_read_reg(cpu.instr->reg1);
+	cpu_write_reg(cpu.instr->reg1, reg - val);
 	CPU_SET_FLAG(FLAG_Z, reg - val == 0);
 	CPU_SET_FLAG(FLAG_N, 1);
 	CPU_SET_FLAG(FLAG_H, ((reg & 0x0F) - ((int)cpu.fetched_data & 0x0F) - (int)CPU_FLAG_C_SET) < 0);
