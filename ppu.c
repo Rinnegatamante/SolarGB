@@ -78,24 +78,61 @@ static inline __attribute__((always_inline)) void ppu_clear_pipeline() {
 
 // PPU FIFO fetch functions
 void ppu_tile_fetch() {
-	if ((lcd.lcdc & 0x01) == 0x01) {
-		uint16_t bg_map_area = ((lcd.lcdc & 0x08) == 0x08) ? 0x9C00: 0x9800;
+	if (LCDC_SET(BGW_ENABLE)) {
+		uint16_t bg_map_area = LCDC_SET(BG_MAP_AREA) ? 0x9C00: 0x9800;
 		ppu.fifo.bgw_fetch_data[0] = bus_read(bg_map_area + (ppu.fifo.map_x / 8) + ((ppu.fifo.map_y / 8) * 32));
-		if ((lcd.lcdc & 0x10) == 0x00) {
+		if (!(LCDC_SET(BGW_DATA_AREA))) {
 			ppu.fifo.bgw_fetch_data[0] += 128;
+		}
+	}
+	if (LCDC_SET(OBJ_ENABLE) && ppu.sprites) {
+		spritelist_t *s = ppu.sprites;
+		while (s) {
+			int sprite_x = (s->s.x - 8) + (lcd.scroll_x % 8);
+			if ((sprite_x >= ppu.fifo.fetch_x && sprite_x < (ppu.fifo.fetch_x + 8)) || ((sprite_x + 8) >= ppu.fifo.fetch_x && (sprite_x + 8) < (ppu.fifo.fetch_x + 8))) {
+				ppu.fetched_sprites[ppu.num_fetched++] = s->s;
+			}
+			s = s->next;
+			if (ppu.num_fetched >= 3) {
+				break;
+			}
 		}
 	}
 	ppu.fifo.fetch_state = FS_DATA0;
 	ppu.fifo.fetch_x += 8;
 }
 void ppu_data0_fetch() {
-	uint16_t data_map_area = ((lcd.lcdc & 0x10) == 0x10) ? 0x8000: 0x8800;
+	uint16_t data_map_area = LCDC_SET(BGW_DATA_AREA) ? 0x8000: 0x8800;
 	ppu.fifo.bgw_fetch_data[1] = bus_read(data_map_area + (ppu.fifo.bgw_fetch_data[0] * 16) + ppu.fifo.tile_y);
+	uint8_t sprite_h = LCDC_SET(OBJ_HEIGHT) ? 16 : 8;
+    for (int i = 0; i < ppu.num_fetched; i++) {
+		uint8_t y = ((lcd.ly + 16) - ppu.fetched_sprites[i].y) * 2;
+		if (ppu.fetched_sprites[i].y_flip) {
+			y = ((sprite_h * 2) - 2) - y;
+		}
+        uint8_t tile_idx = ppu.fetched_sprites[i].tile;
+        if (sprite_h == 16) {
+            tile_idx &= 0xFE;
+        }
+		ppu.fifo.sprite_fetch_data[i * 2] = bus_read(0x8000 + (tile_idx * 16) + y);
+    }
 	ppu.fifo.fetch_state = FS_DATA1;
 }
 void ppu_data1_fetch() {
-	uint16_t data_map_area = ((lcd.lcdc & 0x10) == 0x10) ? 0x8000: 0x8800;
+	uint16_t data_map_area = LCDC_SET(BGW_DATA_AREA) ? 0x8000: 0x8800;
 	ppu.fifo.bgw_fetch_data[2] = bus_read(data_map_area + (ppu.fifo.bgw_fetch_data[0] * 16) + ppu.fifo.tile_y + 1);
+	uint8_t sprite_h = LCDC_SET(OBJ_HEIGHT) ? 16 : 8;
+    for (int i = 0; i < ppu.num_fetched; i++) {
+		uint8_t y = ((lcd.ly + 16) - ppu.fetched_sprites[i].y) * 2;
+		if (ppu.fetched_sprites[i].y_flip) {
+			y = ((sprite_h * 2) - 2) - y;
+		}
+        uint8_t tile_idx = ppu.fetched_sprites[i].tile;
+        if (sprite_h == 16) {
+            tile_idx &= 0xFE;
+        }
+		ppu.fifo.sprite_fetch_data[(i * 2) + 1] = bus_read(0x8000 + (tile_idx * 16) + y + 1);
+    }
 	ppu.fifo.fetch_state = FS_IDLE;
 }
 void ppu_idle_fetch() {
@@ -106,11 +143,37 @@ void ppu_push_fetch() {
 		int x = ppu.fifo.fetch_x - (8 - (lcd.scroll_x % 8));
 		if (x >= 0) {
 			for (int i = 0; i < 8; i++) {
+				pixel_t *p = (pixel_t *)malloc(sizeof(pixel_t));
 				int bitmask = 1 << (7 - i);
 				uint8_t high = (ppu.fifo.bgw_fetch_data[1] & bitmask) != 0 ? 1 : 0;
 				uint8_t low = (ppu.fifo.bgw_fetch_data[2] & bitmask) != 0 ? 2 : 0;
-				pixel_t *p = (pixel_t *)malloc(sizeof(pixel_t));
-				p->col = lcd.bg_cols[high | low];
+				uint8_t bg_idx = high | low;
+				
+				if (!(LCDC_SET(BGW_ENABLE))) {
+					p->col = lcd.bg_cols[0];
+				} else {
+					p->col = lcd.bg_cols[bg_idx];
+				}
+				
+				if (LCDC_SET(OBJ_ENABLE)) {
+					for (int j = 0; j < ppu.num_fetched; j++) {
+						int sprite_x = (ppu.fetched_sprites[j].x - 8) + (lcd.scroll_x % 8);
+						if (sprite_x + 8 >= ppu.fifo.fifo_x) {
+							int offs = ppu.fifo.fifo_x - sprite_x;
+							if (offs >= 0 && offs <= 7) {
+								bitmask = ppu.fetched_sprites[j].x_flip ? (1 << (offs)) : (1 << (7 - offs));
+								high = (ppu.fifo.sprite_fetch_data[j * 2] & bitmask) != 0 ? 1 : 0;
+								low = (ppu.fifo.sprite_fetch_data[(j * 2) + 1] & bitmask) != 0 ? 2 : 0;
+								uint8_t col = high | low;
+								if (col && ((!ppu.fetched_sprites[j].bg_prio) || bg_idx)) {
+									p->col = ppu.fetched_sprites[j].pal_num ? lcd.sp2_cols[col] : lcd.sp1_cols[col];
+									break;
+								}
+							}
+						}
+					}
+				}
+				
 				p->next = NULL;
 				p->prev = ppu.fifo.tail;
 				ppu.fifo.size++;
@@ -166,6 +229,8 @@ void ppu_init() {
 	
 	ppu.cur_frame = 0;
 	ppu.lines = 0;
+	ppu.num_sprites = 0;
+	ppu.num_fetched = 0;
 	ppu.fifo.line_x = 0;
 	ppu.fifo.pushed_x = 0;
 	ppu.fifo.fetch_x = 0;
@@ -226,6 +291,44 @@ void ppu_oam() {
 		ppu.fifo.fetch_x = 0;
 		ppu.fifo.pushed_x = 0;
 		ppu.fifo.fifo_x = 0;
+	}
+	if (ppu.lines == 1) {
+		ppu.num_sprites = 0;
+		ppu.sprites = NULL;
+		uint8_t sprite_h = LCDC_SET(OBJ_HEIGHT) ? 16 : 8;
+		sceClibMemset(ppu.sprite_slots, 0, sizeof(spritelist_t) * 10);
+		for (int i = 0; i < 0x40; i += sizeof(sprite_t)) {
+			sprite_t *s = (sprite_t *)&ppu.oam_ram[i];
+			if (s->x) {
+				if (ppu.num_sprites >= 10) {
+					break;
+				}
+				if (s->y <= (lcd.ly + 16) && s->y + sprite_h > (lcd.ly + 16)) {
+					spritelist_t *en = &ppu.sprite_slots[ppu.num_sprites++];
+					en->s = *s;
+					en->next = NULL;
+					if (ppu.sprites == NULL || ppu.sprites->s.x > s->x) {
+						en->next = ppu.sprites;
+						ppu.sprites = en;
+					} else {
+						spritelist_t *le = ppu.sprites;
+						spritelist_t *prev = le;
+						while (le) {
+							if (le->s.x > s->x) {
+								prev->next = en;
+								en->next = le;
+								break;
+							} else if (le->next == NULL) {
+								le->next = en;
+								break;
+							}
+							prev = le;
+							le = le->next;
+						}
+					}
+				}
+			}
+		}
 	}
 }
 void ppu_xfer() {
