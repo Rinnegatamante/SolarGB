@@ -88,8 +88,8 @@ typedef struct {
 } fifo_t;
 
 typedef struct sprite_t {
-	uint8_t x;
 	uint8_t y;
+	uint8_t x;
 	uint8_t tile;
 	uint8_t cgb_pal_num : 3;
 	uint8_t vram_bank : 1;

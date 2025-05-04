@@ -79,6 +79,8 @@ static inline __attribute__((always_inline)) void ppu_clear_pipeline() {
 
 // PPU FIFO fetch functions
 void ppu_tile_fetch() {
+	ppu.num_fetched = 0;
+	
 	if (LCDC_SET(BGW_ENABLE)) {
 		uint16_t bg_map_area = LCDC_SET(BG_MAP_AREA) ? 0x9C00: 0x9800;
 		ppu.fifo.bgw_fetch_data[0] = bus_read(bg_map_area + (ppu.fifo.map_x / 8) + ((ppu.fifo.map_y / 8) * 32));
@@ -306,8 +308,7 @@ void ppu_oam() {
 		ppu.fifo.fetch_x = 0;
 		ppu.fifo.pushed_x = 0;
 		ppu.fifo.fifo_x = 0;
-	}
-	if (ppu.lines == 1) {
+	} else if (ppu.lines == 1) {
 		ppu.num_sprites = 0;
 		ppu.sprites = NULL;
 		uint8_t sprite_h = LCDC_SET(OBJ_HEIGHT) ? 16 : 8;
@@ -318,7 +319,7 @@ void ppu_oam() {
 				if (ppu.num_sprites >= 10) {
 					break;
 				}
-				if (s->y <= (lcd.ly + 16) && s->y + sprite_h > (lcd.ly + 16)) {
+				if (s->y <= (lcd.ly + 16) && (s->y + sprite_h) > (lcd.ly + 16)) {
 					spritelist_t *en = &ppu.sprite_slots[ppu.num_sprites++];
 					en->s = *s;
 					en->next = NULL;
