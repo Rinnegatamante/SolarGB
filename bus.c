@@ -1,17 +1,3 @@
-// 0x0000 - 0x3FFF : ROM Bank 0
-// 0x4000 - 0x7FFF : ROM Bank 1 - Switchable
-// 0x8000 - 0x97FF : CHR RAM
-// 0x9800 - 0x9BFF : BG Map 1
-// 0x9C00 - 0x9FFF : BG Map 2
-// 0xA000 - 0xBFFF : Cartridge RAM
-// 0xC000 - 0xCFFF : RAM Bank 0
-// 0xD000 - 0xDFFF : RAM Bank 1-7 - switchable - Color only
-// 0xE000 - 0xFDFF : Reserved - Echo RAM
-// 0xFE00 - 0xFE9F : Object Attribute Memory
-// 0xFEA0 - 0xFEFF : Reserved - Unusable
-// 0xFF00 - 0xFF7F : I/O Registers
-// 0xFF80 - 0xFFFE : Zero Page
-
 #include <vitasdk.h>
 #include <stdio.h>
 #include <string.h>
@@ -31,24 +17,24 @@ static uint8_t keys = 0;
 // Bus write functions
 void null_write(uint16_t addr, uint8_t val) {}
 void ppu_vram_write(uint16_t addr, uint8_t val) {
-	ppu.vram[addr - 0x8000] = val;
+	ppu.vram[addr - ADDR_CHR_RAM] = val;
 }
 void wram_write(uint16_t addr, uint8_t val) {
-	wram[addr - 0xC000] = val;
+	wram[addr - ADDR_RAM_BANK_0] = val;
 }
 void oam_write(uint16_t addr, uint8_t val) {
 	if (!dma.active) {
-		ppu.oam_ram[addr - 0xFE00] = val;
+		ppu.oam_ram[addr - ADDR_OAM] = val;
 	}
 }
 void ie_write(uint16_t addr, uint8_t val) {
 	cpu.regs.IE = val;
 }
 void hram_write(uint16_t addr, uint8_t val) {
-	hram[addr - 0xFF80] = val;
+	hram[addr - ADDR_HRAM] = val;
 }
 void serial_write(uint16_t addr, uint8_t val) {
-	serial_data[addr - 0xFF01] = 0;
+	serial_data[addr - (ADDR_IO_REGS + 1)] = 0;
 }
 void timer_div_write(uint16_t addr, uint8_t val) {
 	timer.div = 0;
@@ -70,7 +56,7 @@ void gamepad_write(uint16_t addr, uint8_t val) {
 }
 void lcd_reg_write(uint16_t addr, uint8_t val) {
 	uint8_t *p = (uint8_t *)&lcd;
-	p[addr - 0xFF40] = val;
+	p[addr - ADDR_LCD_REGS] = val;
 }
 void lcd_dma_write(uint16_t addr, uint8_t val) {
 	uint8_t *p = (uint8_t *)&lcd;
@@ -108,25 +94,25 @@ bus_wfuncs_t bus_write_funcs[0x10000] = {};
 // Bus read functions
 uint8_t null_read(uint16_t addr) { return 0; }
 uint8_t ppu_vram_read(uint16_t addr) {
-	return ppu.vram[addr - 0x8000];
+	return ppu.vram[addr - ADDR_CHR_RAM];
 }
 uint8_t wram_read(uint16_t addr) {
-	return wram[addr - 0xC000];
+	return wram[addr - ADDR_RAM_BANK_0];
 }
 uint8_t oam_read(uint16_t addr) {
 	if (dma.active) {
 		return 0xFF;
 	}
-	return ppu.oam_ram[addr - 0xFE00];
+	return ppu.oam_ram[addr - ADDR_OAM];
 }
 uint8_t ie_read(uint16_t addr) {
 	return cpu.regs.IE;
 }
 uint8_t hram_read(uint16_t addr) {
-	return hram[addr - 0xFF80];
+	return hram[addr - ADDR_HRAM];
 }
 uint8_t serial_read(uint16_t addr) {
-	return serial_data[addr - 0xFF01];
+	return serial_data[addr - (ADDR_IO_REGS + 1)];
 }
 uint8_t timer_div_read(uint16_t addr) {
 	return timer.div >> 8;
@@ -177,7 +163,7 @@ uint8_t gamepad_read(uint16_t addr) {
 }
 uint8_t lcd_read(uint16_t addr) {
 	uint8_t *p = (uint8_t *)&lcd;
-	return p[addr - 0xFF40];
+	return p[addr - ADDR_LCD_REGS];
 }
 uint8_t cart_read(uint16_t addr) {
 	return rom.data[addr];
@@ -187,95 +173,95 @@ void bus_init() {
 	serial_data[0] = serial_data[1] = 0;
 	
 	// ROM data
-	for (int i = 0; i < 0x8000; i++) {
+	for (int i = 0; i < ADDR_CHR_RAM; i++) {
 		bus_write_funcs[i] = null_write;
 		bus_read_funcs[i] = cart_read;
 	}
 	// Char/Map data
-	for (int i = 0x8000; i < 0xA000; i++) {
+	for (int i = ADDR_CHR_RAM; i < ADDR_CART_RAM; i++) {
 		bus_write_funcs[i] = ppu_vram_write;
 		bus_read_funcs[i] = ppu_vram_read;
 	}
 	// Cartridge RAM
-	for (int i = 0xA000; i < 0xC000; i++) {
+	for (int i = ADDR_CART_RAM; i < ADDR_RAM_BANK_0; i++) {
 		bus_write_funcs[i] = null_write;
 		bus_read_funcs[i] = cart_read;
 	}
 	// Working RAM
-	for (int i = 0xC000; i < 0xE000; i++) {
+	for (int i = ADDR_RAM_BANK_0; i < ADDR_ECHO_RAM; i++) {
 		bus_write_funcs[i] = wram_write;
 		bus_read_funcs[i] = wram_read;
 	}
 	// Reserved echo RAM
-	for (int i = 0xE000; i < 0xFE00; i++) {
+	for (int i = ADDR_ECHO_RAM; i < ADDR_OAM; i++) {
 		bus_write_funcs[i] = null_write;
 		bus_read_funcs[i] = null_read;
 	}
 	// OAM
-	for (int i = 0xFE00; i < 0xFEA0; i++) {
+	for (int i = ADDR_OAM; i < ADDR_RESERVED; i++) {
 		bus_write_funcs[i] = oam_write;
 		bus_read_funcs[i] = oam_read;
 	}
 	// Reserved section
-	for (int i = 0xFEA0; i < 0xFF00; i++) {
+	for (int i = ADDR_RESERVED; i < ADDR_IO_REGS; i++) {
 		bus_write_funcs[i] = null_write;
 		bus_read_funcs[i] = null_read;
 	}
 	// IO Registers
-	bus_write_funcs[0xFF00] = gamepad_write;
-	bus_read_funcs[0xFF00] = gamepad_read;
-	bus_write_funcs[0xFF01] = serial_write;
-	bus_read_funcs[0xFF01] = serial_read;
-	bus_write_funcs[0xFF02] = serial_write;
-	bus_read_funcs[0xFF02] = serial_read;
-	bus_write_funcs[0xFF03] = null_write;
-	bus_read_funcs[0xFF03] = null_read;
-	bus_write_funcs[0xFF04] = timer_div_write;
-	bus_read_funcs[0xFF04] = timer_div_read;
-	bus_write_funcs[0xFF05] = timer_tima_write;
-	bus_read_funcs[0xFF05] = timer_tima_read;
-	bus_write_funcs[0xFF06] = timer_tma_write;
-	bus_read_funcs[0xFF06] = timer_tma_read;
-	bus_write_funcs[0xFF07] = timer_tac_write;
-	bus_read_funcs[0xFF07] = timer_tac_read;
-	for (int i = 0xFF08; i < 0xFF0F; i++) {
+	bus_write_funcs[ADDR_IO_REGS] = gamepad_write;
+	bus_read_funcs[ADDR_IO_REGS] = gamepad_read;
+	bus_write_funcs[ADDR_IO_REGS + 1] = serial_write;
+	bus_read_funcs[ADDR_IO_REGS + 1] = serial_read;
+	bus_write_funcs[ADDR_IO_REGS + 2] = serial_write;
+	bus_read_funcs[ADDR_IO_REGS + 2] = serial_read;
+	bus_write_funcs[ADDR_IO_REGS + 3] = null_write;
+	bus_read_funcs[ADDR_IO_REGS + 3] = null_read;
+	bus_write_funcs[ADDR_IO_REGS + 4] = timer_div_write;
+	bus_read_funcs[ADDR_IO_REGS + 4] = timer_div_read;
+	bus_write_funcs[ADDR_IO_REGS + 5] = timer_tima_write;
+	bus_read_funcs[ADDR_IO_REGS + 5] = timer_tima_read;
+	bus_write_funcs[ADDR_IO_REGS + 6] = timer_tma_write;
+	bus_read_funcs[ADDR_IO_REGS + 6] = timer_tma_read;
+	bus_write_funcs[ADDR_IO_REGS + 7] = timer_tac_write;
+	bus_read_funcs[ADDR_IO_REGS + 7] = timer_tac_read;
+	for (int i = ADDR_IO_REGS + 8; i < ADDR_IO_REGS + 0x0F; i++) {
 		bus_write_funcs[i] = null_write;
 		bus_read_funcs[i] = null_read;
 	}
-	bus_write_funcs[0xFF0F] = cpu_intr_write;
-	bus_read_funcs[0xFF0F] = cpu_intr_read;
-	for (int i = 0xFF10; i < 0xFF40; i++) {
+	bus_write_funcs[ADDR_IO_REGS + 0x0F] = cpu_intr_write;
+	bus_read_funcs[ADDR_IO_REGS + 0x0F] = cpu_intr_read;
+	for (int i = ADDR_IO_REGS + 0x10; i < ADDR_LCD_REGS; i++) {
 		bus_write_funcs[i] = null_write;
 		bus_read_funcs[i] = null_read;
 	}
-	for (int i = 0xFF40; i < 0xFF4C; i++) {
-		if (i < 0xFF46) {
+	for (int i = ADDR_LCD_REGS; i < ADDR_LCD_REGS + 0x0C; i++) {
+		if (i < ADDR_LCD_REGS + 6) {
 			bus_write_funcs[i] = lcd_reg_write;
-		} else if (i == 0xFF46) {
+		} else if (i == ADDR_LCD_REGS + 6) {
 			bus_write_funcs[i] = lcd_dma_write;
-		} else if (i == 0xFF47) {
+		} else if (i == ADDR_LCD_REGS + 7) {
 			bus_write_funcs[i] = lcd_bg_write;
-		} else if (i == 0xFF48) {
+		} else if (i == ADDR_LCD_REGS + 8) {
 			bus_write_funcs[i] = lcd_sp1_write;
-		} else if (i == 0xFF49) {
+		} else if (i == ADDR_LCD_REGS + 9) {
 			bus_write_funcs[i] = lcd_sp2_write;
 		} else {
 			bus_write_funcs[i] = lcd_reg_write;
 		}
 		bus_read_funcs[i] = lcd_read;
 	}
-	for (int i = 0xFF4C; i < 0xFF80; i++) {
+	for (int i = ADDR_LCD_REGS + 0x0C; i < ADDR_HRAM; i++) {
 		bus_write_funcs[i] = null_write;
 		bus_read_funcs[i] = null_read;
 	}
 	// HRAM
-	for (int i = 0xFF80; i < 0xFFFF; i++) {
+	for (int i = ADDR_HRAM; i < ADDR_IE_REG; i++) {
 		bus_write_funcs[i] = hram_write;
 		bus_read_funcs[i] = hram_read;
 	}
 	// Interrupt Enable register
-	bus_write_funcs[0xFFFF] = ie_write;
-	bus_read_funcs[0xFFFF] = ie_read;
+	bus_write_funcs[ADDR_IE_REG] = ie_write;
+	bus_read_funcs[ADDR_IE_REG] = ie_read;
 
 #if 0
 	// Sanity check

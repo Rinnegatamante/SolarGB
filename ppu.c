@@ -82,10 +82,10 @@ void ppu_tile_fetch() {
 	ppu.num_fetched = 0;
 	if (LCDC_WIN_SET() && ((ppu.fifo.fetch_x + 7) >= lcd.win_x && (ppu.fifo.fetch_x + 7) < (lcd.win_x + GB_SCREEN_H + 14) && lcd.ly >= lcd.win_y && lcd.ly < lcd.win_y + GB_SCREEN_W)) {
 		uint8_t y = ppu.win_line / 8;
-		uint16_t win_map_area = LCDC_SET(WIN_MAP_AREA) ? 0x9C00 : 0x9800;
+		uint16_t win_map_area = LCDC_SET(WIN_MAP_AREA) ? ADDR_BG_MAP2 : ADDR_BG_MAP1;
 		ppu.fifo.bgw_fetch_data[0] = bus_read(win_map_area + ((ppu.fifo.fetch_x + 7 - lcd.win_x) / 8) + (y * 32));
 	} else if (LCDC_SET(BGW_ENABLE)) {
-		uint16_t bg_map_area = LCDC_SET(BG_MAP_AREA) ? 0x9C00: 0x9800;
+		uint16_t bg_map_area = LCDC_SET(BG_MAP_AREA) ? ADDR_BG_MAP2: ADDR_BG_MAP1;
 		ppu.fifo.bgw_fetch_data[0] = bus_read(bg_map_area + (ppu.fifo.map_x / 8) + ((ppu.fifo.map_y / 8) * 32));
 	}
 	if (!(LCDC_SET(BGW_DATA_AREA))) {
@@ -108,7 +108,7 @@ void ppu_tile_fetch() {
 	ppu.fifo.fetch_x += 8;
 }
 void ppu_data0_fetch() {
-	uint16_t data_map_area = LCDC_SET(BGW_DATA_AREA) ? 0x8000: 0x8800;
+	uint16_t data_map_area = LCDC_SET(BGW_DATA_AREA) ? ADDR_CHR_RAM: (ADDR_CHR_RAM + 0x800);
 	ppu.fifo.bgw_fetch_data[1] = bus_read(data_map_area + (ppu.fifo.bgw_fetch_data[0] * 16) + ppu.fifo.tile_y);
 	uint8_t sprite_h = LCDC_SET(OBJ_HEIGHT) ? 16 : 8;
     for (int i = 0; i < ppu.num_fetched; i++) {
@@ -120,12 +120,12 @@ void ppu_data0_fetch() {
         if (sprite_h == 16) {
             tile_idx &= 0xFE;
         }
-		ppu.fifo.sprite_fetch_data[i * 2] = bus_read(0x8000 + (tile_idx * 16) + y);
+		ppu.fifo.sprite_fetch_data[i * 2] = bus_read(ADDR_CHR_RAM + (tile_idx * 16) + y);
     }
 	ppu.fifo.fetch_state = FS_DATA1;
 }
 void ppu_data1_fetch() {
-	uint16_t data_map_area = LCDC_SET(BGW_DATA_AREA) ? 0x8000: 0x8800;
+	uint16_t data_map_area = LCDC_SET(BGW_DATA_AREA) ? ADDR_CHR_RAM : (ADDR_CHR_RAM + 0x800);
 	ppu.fifo.bgw_fetch_data[2] = bus_read(data_map_area + (ppu.fifo.bgw_fetch_data[0] * 16) + ppu.fifo.tile_y + 1);
 	uint8_t sprite_h = LCDC_SET(OBJ_HEIGHT) ? 16 : 8;
     for (int i = 0; i < ppu.num_fetched; i++) {
@@ -137,7 +137,7 @@ void ppu_data1_fetch() {
         if (sprite_h == 16) {
             tile_idx &= 0xFE;
         }
-		ppu.fifo.sprite_fetch_data[(i * 2) + 1] = bus_read(0x8000 + (tile_idx * 16) + y + 1);
+		ppu.fifo.sprite_fetch_data[(i * 2) + 1] = bus_read(ADDR_CHR_RAM + (tile_idx * 16) + y + 1);
     }
 	ppu.fifo.fetch_state = FS_IDLE;
 }
