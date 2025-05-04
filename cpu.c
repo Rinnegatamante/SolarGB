@@ -14,7 +14,7 @@ static void _NOP() {}
 static uint8_t _RET1() { return 1; }
 
 cpu_t cpu;
-static char serial_out[1024] = {};
+static char serial_out[1024 * 1024] = {};
 static size_t serial_len = 0;
 
 // Registers lookup table for bitwise operations
@@ -746,7 +746,7 @@ void _IN_CB() {
 		CPU_SET_FLAG(FLAG_Z, (rval & (1 << bit)) == 0);
 		CPU_SET_FLAG(FLAG_N, 0);
 		CPU_SET_FLAG(FLAG_H, 1);
-		break;
+		return;
 	case 2: // RST
 		rval &= ~(1 << bit);
 		if (reg == RT_HL) {
@@ -754,7 +754,7 @@ void _IN_CB() {
 		} else {
 			cpu_write_reg(reg, rval);
 		}
-		break;
+		return;
 	case 3: // SET
 		rval |= (1 << bit);
 		if (reg == RT_HL) {
@@ -762,6 +762,8 @@ void _IN_CB() {
 		} else {
 			cpu_write_reg(reg, rval);
 		}
+		return;
+	default:
 		break;
 	}
 	
