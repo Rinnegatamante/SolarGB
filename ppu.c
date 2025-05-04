@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "bus.h"
+#include "cart.h"
 #include "cpu.h"
 #include "dma.h"
 #include "emu.h"
@@ -287,6 +288,10 @@ void ppu_hblank() {
 			}
 			ppu.draw_frame = ppu.cur_frame % SCREEN_BUFFERS;
 			ppu.cur_frame++;
+			if (rom.save_battery) {
+				cart_save_battery();
+				rom.save_battery = 0;
+			}
 			if (emu.opts.frametime_log) {
 				uint32_t tick = sceKernelGetProcessTimeLow();
 				sceClibPrintf("Frame processed in %d ms\n", (tick - emu.frametime_tick) / 1000);
