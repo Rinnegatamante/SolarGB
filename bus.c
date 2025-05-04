@@ -108,8 +108,8 @@ void cart_ram_bank_swap_write(uint16_t addr, uint8_t val) {
 	}
 }
 void cart_mbc3_ram_bank_swap_write(uint16_t addr, uint8_t val) {
-	rom.ram_bank_num = val & 0x03;
-	rom.rtc_reg_num = (val >> 3) & 0x03;
+	rom.ram_bank_num = val & 0x07;
+	rom.rtc_reg_num = (val >> 3) & 0x07;
 	rom.ram_banking = rom.rtc_reg_num == 0;
 	rom.ram_bank = rom.ram_banks[rom.ram_bank_num];
 	if (rom.ram_banking && rom.save_battery) {
