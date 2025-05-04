@@ -65,40 +65,43 @@ void timer_tac_write(uint16_t addr, uint8_t val) {
 void cpu_intr_write(uint16_t addr, uint8_t val) {
 	cpu.interrupts = val;
 }
-void lcd_write(uint16_t addr, uint8_t val) {
 void gamepad_write(uint16_t addr, uint8_t val) {
 	keys = val;
 }
+void lcd_reg_write(uint16_t addr, uint8_t val) {
 	uint8_t *p = (uint8_t *)&lcd;
 	p[addr - 0xFF40] = val;
-	uint8_t v;
-	switch (addr) {
-	case 0xFF46:
-		dma_start(val);
-		break;
-	case 0xFF47:
-		lcd.bg_cols[0] = ppu.cols[val & 0x03];
-		lcd.bg_cols[1] = ppu.cols[(val >> 2) & 0x03];
-		lcd.bg_cols[2] = ppu.cols[(val >> 4) & 0x03];
-		lcd.bg_cols[3] = ppu.cols[(val >> 6) & 0x03];
-		break;
-	case 0xFF48:
-		v = val & 0b11111100;
-		lcd.sp1_cols[0] = ppu.cols[0];
-		lcd.sp1_cols[1] = ppu.cols[(v >> 2) & 0x03];
-		lcd.sp1_cols[2] = ppu.cols[(v >> 4) & 0x03];
-		lcd.sp1_cols[3] = ppu.cols[(v >> 6) & 0x03];
-		break;
-	case 0xFF49:
-		v = val & 0b11111100;
-		lcd.sp2_cols[0] = ppu.cols[0];
-		lcd.sp2_cols[1] = ppu.cols[(v >> 2) & 0x03];
-		lcd.sp2_cols[2] = ppu.cols[(v >> 4) & 0x03];
-		lcd.sp2_cols[3] = ppu.cols[(v >> 6) & 0x03];
-		break;
-	default:
-		break;
-	}
+}
+void lcd_dma_write(uint16_t addr, uint8_t val) {
+	uint8_t *p = (uint8_t *)&lcd;
+	p[6] = val;
+	dma_start(val);
+}
+void lcd_bg_write(uint16_t addr, uint8_t val) {
+	uint8_t *p = (uint8_t *)&lcd;
+	p[7] = val;
+	lcd.bg_cols[0] = ppu.cols[val & 0x03];
+	lcd.bg_cols[1] = ppu.cols[(val >> 2) & 0x03];
+	lcd.bg_cols[2] = ppu.cols[(val >> 4) & 0x03];
+	lcd.bg_cols[3] = ppu.cols[(val >> 6) & 0x03];
+}
+void lcd_sp1_write(uint16_t addr, uint8_t val) {
+	uint8_t *p = (uint8_t *)&lcd;
+	p[8] = val;
+	uint8_t v = val & 0b11111100;
+	lcd.sp1_cols[0] = ppu.cols[0];
+	lcd.sp1_cols[1] = ppu.cols[(v >> 2) & 0x03];
+	lcd.sp1_cols[2] = ppu.cols[(v >> 4) & 0x03];
+	lcd.sp1_cols[3] = ppu.cols[(v >> 6) & 0x03];
+}
+void lcd_sp2_write(uint16_t addr, uint8_t val) {
+	uint8_t *p = (uint8_t *)&lcd;
+	p[9] = val;
+	uint8_t v = val & 0b11111100;
+	lcd.sp2_cols[0] = ppu.cols[0];
+	lcd.sp2_cols[1] = ppu.cols[(v >> 2) & 0x03];
+	lcd.sp2_cols[2] = ppu.cols[(v >> 4) & 0x03];
+	lcd.sp2_cols[3] = ppu.cols[(v >> 6) & 0x03];
 }
 bus_wfuncs_t bus_write_funcs[0x10000] = {};
 
@@ -246,7 +249,19 @@ void bus_init() {
 		bus_read_funcs[i] = null_read;
 	}
 	for (int i = 0xFF40; i < 0xFF4C; i++) {
-		bus_write_funcs[i] = lcd_write;
+		if (i < 0xFF46) {
+			bus_write_funcs[i] = lcd_reg_write;
+		} else if (i == 0xFF46) {
+			bus_write_funcs[i] = lcd_dma_write;
+		} else if (i == 0xFF47) {
+			bus_write_funcs[i] = lcd_bg_write;
+		} else if (i == 0xFF48) {
+			bus_write_funcs[i] = lcd_sp1_write;
+		} else if (i == 0xFF49) {
+			bus_write_funcs[i] = lcd_sp2_write;
+		} else {
+			bus_write_funcs[i] = lcd_reg_write;
+		}
 		bus_read_funcs[i] = lcd_read;
 	}
 	for (int i = 0xFF4C; i < 0xFF80; i++) {
