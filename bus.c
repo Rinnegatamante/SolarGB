@@ -208,61 +208,51 @@ uint8_t cart_rom_bank_read(uint16_t addr) {
 	return rom.rom_bank[addr - 0x4000];
 }
 bus_rfuncs_t bus_read_funcs[0x10000] = {};
+
+#define MAP_R_RANGE(min, max, func) \
+	for (int i = min; i < max; i++) { \
+		bus_read_funcs[i] = func; \
+	}
+	
+#define MAP_W_RANGE(min, max, func) \
+	for (int i = min; i < max; i++) { \
+		bus_write_funcs[i] = func; \
+	}
+	
+#define MAP_RW_RANGE(min, max, rf, wf) \
+	for (int i = min; i < max; i++) { \
+		bus_read_funcs[i] = rf; \
+		bus_write_funcs[i] = wf; \
+	}
+
 void bus_init() {
 	serial_data[0] = serial_data[1] = 0;
 	
 	// ROM data
-	for (int i = 0; i < ADDR_CHR_RAM; i++) {
-		if (rom.mbc1) {
-			if (i < 0x2000) {
-				bus_write_funcs[i] = cart_ram_enable_write;
-			} else if (i < ADDR_ROM_BANK_1) {
-				bus_write_funcs[i] = cart_rom_bank_swap_write;
-			} else if (i < 0x6000) {
-				bus_write_funcs[i] = cart_ram_bank_swap_write;
-			} else {
-				bus_write_funcs[i] = cart_ram_bank_mode_write;
-			}
-			if (i < ADDR_ROM_BANK_1) {
-				bus_read_funcs[i] = cart_read;
-			} else {
-				bus_read_funcs[i] = cart_rom_bank_read;
-			}
-		} else {
-			bus_write_funcs[i] = null_write;
-			bus_read_funcs[i] = cart_read;
-		}
+	if (rom.mbc1) {
+		MAP_W_RANGE(0, 0x2000, cart_ram_enable_write);
+		MAP_W_RANGE(0x2000, 0x4000, cart_rom_bank_swap_write);
+		MAP_W_RANGE(0x4000, 0x6000, cart_ram_bank_swap_write);
+		MAP_W_RANGE(0x6000, ADDR_CHR_RAM, cart_ram_bank_mode_write);
+		MAP_R_RANGE(0, ADDR_ROM_BANK_1, cart_read);
+		MAP_R_RANGE(ADDR_ROM_BANK_1, ADDR_CHR_RAM, cart_rom_bank_read);
+	} else if (rom.mbc3) {
+		
+	} else {
+		MAP_RW_RANGE(0, ADDR_CHR_RAM, cart_read, null_write);
 	}
 	// Char/Map data
-	for (int i = ADDR_CHR_RAM; i < ADDR_CART_RAM; i++) {
-		bus_write_funcs[i] = ppu_vram_write;
-		bus_read_funcs[i] = ppu_vram_read;
-	}
+	MAP_RW_RANGE(ADDR_CHR_RAM, ADDR_CART_RAM, ppu_vram_read, ppu_vram_write);
 	// Cartridge RAM
-	for (int i = ADDR_CART_RAM; i < ADDR_RAM_BANK_0; i++) {
-		bus_write_funcs[i] = cart_ram_write;
-		bus_read_funcs[i] = cart_ram_read;
-	}
+	MAP_RW_RANGE(ADDR_CART_RAM, ADDR_RAM_BANK_0, cart_ram_read, cart_ram_write);
 	// Working RAM
-	for (int i = ADDR_RAM_BANK_0; i < ADDR_ECHO_RAM; i++) {
-		bus_write_funcs[i] = wram_write;
-		bus_read_funcs[i] = wram_read;
-	}
+	MAP_RW_RANGE(ADDR_RAM_BANK_0, ADDR_ECHO_RAM, wram_read, wram_write);
 	// Reserved echo RAM
-	for (int i = ADDR_ECHO_RAM; i < ADDR_OAM; i++) {
-		bus_write_funcs[i] = null_write;
-		bus_read_funcs[i] = null_read;
-	}
+	MAP_RW_RANGE(ADDR_ECHO_RAM, ADDR_OAM, null_read, null_write);
 	// OAM
-	for (int i = ADDR_OAM; i < ADDR_RESERVED; i++) {
-		bus_write_funcs[i] = oam_write;
-		bus_read_funcs[i] = oam_read;
-	}
+	MAP_RW_RANGE(ADDR_OAM, ADDR_RESERVED, oam_read, oam_write);
 	// Reserved section
-	for (int i = ADDR_RESERVED; i < ADDR_IO_REGS; i++) {
-		bus_write_funcs[i] = null_write;
-		bus_read_funcs[i] = null_read;
-	}
+	MAP_RW_RANGE(ADDR_RESERVED, ADDR_IO_REGS, null_read, null_write);
 	// IO Registers
 	bus_write_funcs[ADDR_IO_REGS] = gamepad_write;
 	bus_read_funcs[ADDR_IO_REGS] = gamepad_read;
@@ -280,41 +270,18 @@ void bus_init() {
 	bus_read_funcs[ADDR_IO_REGS + 6] = timer_tma_read;
 	bus_write_funcs[ADDR_IO_REGS + 7] = timer_tac_write;
 	bus_read_funcs[ADDR_IO_REGS + 7] = timer_tac_read;
-	for (int i = ADDR_IO_REGS + 8; i < ADDR_IO_REGS + 0x0F; i++) {
-		bus_write_funcs[i] = null_write;
-		bus_read_funcs[i] = null_read;
-	}
+	MAP_RW_RANGE(ADDR_IO_REGS + 8, ADDR_IO_REGS + 0x0F, null_read, null_write);
 	bus_write_funcs[ADDR_IO_REGS + 0x0F] = cpu_intr_write;
 	bus_read_funcs[ADDR_IO_REGS + 0x0F] = cpu_intr_read;
-	for (int i = ADDR_IO_REGS + 0x10; i < ADDR_LCD_REGS; i++) {
-		bus_write_funcs[i] = null_write;
-		bus_read_funcs[i] = null_read;
-	}
-	for (int i = ADDR_LCD_REGS; i < ADDR_LCD_REGS + 0x0C; i++) {
-		if (i < ADDR_LCD_REGS + 6) {
-			bus_write_funcs[i] = lcd_reg_write;
-		} else if (i == ADDR_LCD_REGS + 6) {
-			bus_write_funcs[i] = lcd_dma_write;
-		} else if (i == ADDR_LCD_REGS + 7) {
-			bus_write_funcs[i] = lcd_bg_write;
-		} else if (i == ADDR_LCD_REGS + 8) {
-			bus_write_funcs[i] = lcd_sp1_write;
-		} else if (i == ADDR_LCD_REGS + 9) {
-			bus_write_funcs[i] = lcd_sp2_write;
-		} else {
-			bus_write_funcs[i] = lcd_reg_write;
-		}
-		bus_read_funcs[i] = lcd_read;
-	}
-	for (int i = ADDR_LCD_REGS + 0x0C; i < ADDR_HRAM; i++) {
-		bus_write_funcs[i] = null_write;
-		bus_read_funcs[i] = null_read;
-	}
+	MAP_RW_RANGE(ADDR_IO_REGS + 0x10, ADDR_LCD_REGS, null_read, null_write);
+	MAP_RW_RANGE(ADDR_LCD_REGS, ADDR_LCD_REGS + 0x0C, lcd_read, lcd_reg_write);
+	bus_write_funcs[ADDR_LCD_REGS + 6] = lcd_dma_write;
+	bus_write_funcs[ADDR_LCD_REGS + 7] = lcd_bg_write;
+	bus_write_funcs[ADDR_LCD_REGS + 8] = lcd_sp1_write;
+	bus_write_funcs[ADDR_LCD_REGS + 9] = lcd_sp2_write;
+	MAP_RW_RANGE(ADDR_LCD_REGS + 0x0C, ADDR_HRAM, null_read, null_write);
 	// HRAM
-	for (int i = ADDR_HRAM; i < ADDR_IE_REG; i++) {
-		bus_write_funcs[i] = hram_write;
-		bus_read_funcs[i] = hram_read;
-	}
+	MAP_RW_RANGE(ADDR_HRAM, ADDR_IE_REG, hram_read, hram_write);
 	// Interrupt Enable register
 	bus_write_funcs[ADDR_IE_REG] = ie_write;
 	bus_read_funcs[ADDR_IE_REG] = ie_read;
