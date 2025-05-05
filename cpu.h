@@ -155,15 +155,10 @@ typedef struct {
 	uint8_t serial_port_enabled; // Log serial port output to system console
 	uint8_t emu_state;
 	reg_t regs;
-	instr_t *instr;
-	uint16_t fetched_data;
-	uint16_t mem_dest;
-	uint8_t use_mem_dest;
 	uint8_t interrupts;
 	uint8_t halted;
 	uint8_t master_interrupts;
 	uint8_t enable_interrupts;
-	uint8_t opcode;
 } cpu_t;
 
 extern cpu_t cpu;
