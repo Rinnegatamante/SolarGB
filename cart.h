@@ -23,6 +23,12 @@ enum {
 	CART_GLOBAL_CHECKSUM = 0x14E, // Size 2
 };
 
+enum {
+	MAPPER_NONE,
+	MAPPER_MBC1,
+	MAPPER_MBC3,
+};
+
 typedef struct {
 	uint8_t s;
 	uint8_t m;
@@ -39,8 +45,7 @@ typedef struct {
 	char name[17];
 	char licensee[64];
 	char fname[256];
-	uint8_t mbc1;
-	uint8_t mbc3;
+	uint8_t mapper;
 	uint8_t ram_enabled;
 	uint8_t ram_banking;
 	uint8_t *rom_bank;

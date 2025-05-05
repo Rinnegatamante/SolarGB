@@ -264,14 +264,14 @@ void bus_init() {
 	serial_data[0] = serial_data[1] = 0;
 	
 	// ROM data
-	if (rom.mbc1) {
+	if (rom.mapper == MAPPER_MBC1) {
 		MAP_W_RANGE(0, 0x2000, cart_ram_enable_write);
 		MAP_W_RANGE(0x2000, 0x4000, cart_rom_bank_swap_write);
 		MAP_W_RANGE(0x4000, 0x6000, cart_ram_bank_swap_write);
 		MAP_W_RANGE(0x6000, ADDR_CHR_RAM, cart_ram_bank_mode_write);
 		MAP_R_RANGE(0, ADDR_ROM_BANK_1, cart_read);
 		MAP_R_RANGE(ADDR_ROM_BANK_1, ADDR_CHR_RAM, cart_rom_bank_read);
-	} else if (rom.mbc3) {
+	} else if (rom.mapper == MAPPER_MBC3) {
 		MAP_W_RANGE(0, 0x2000, cart_ram_enable_write);
 		MAP_W_RANGE(0x2000, 0x4000, cart_mbc3_rom_bank_swap_write);
 		MAP_W_RANGE(0x4000, 0x6000, cart_mbc3_ram_bank_swap_write);
@@ -284,7 +284,7 @@ void bus_init() {
 	// Char/Map data
 	MAP_RW_RANGE(ADDR_CHR_RAM, ADDR_CART_RAM, ppu_vram_read, ppu_vram_write);
 	// Cartridge RAM
-	if (rom.mbc3) {
+	if (rom.mapper == MAPPER_MBC3) {
 		MAP_RW_RANGE(ADDR_CART_RAM, ADDR_RAM_BANK_0, cart_mbc3_ram_read, cart_mbc3_ram_write);
 	} else {
 		MAP_RW_RANGE(ADDR_CART_RAM, ADDR_RAM_BANK_0, cart_ram_read, cart_ram_write);

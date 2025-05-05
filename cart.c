@@ -360,14 +360,11 @@ void cart_load(const char *path) {
 	// Parsing battery/mapper info
 	rom.save_battery = 0;
 	if (strstr(cart_types[rom.type], "MBC1")) {
-		rom.mbc1 = 1;
+		rom.mapper = MAPPER_MBC1;
+	} else if (strstr(cart_types[rom.type], "MBC3")) {
+		rom.mapper = MAPPER_MBC3;
 	} else {
-		rom.mbc1 = 0;
-	}
-	if (strstr(cart_types[rom.type], "MBC3")) {
-		rom.mbc3 = 1;
-	} else {
-		rom.mbc3 = 0;
+		rom.mapper = MAPPER_NONE;
 	}
 	if (strstr(cart_types[rom.type], "BATTERY")) {
 		rom.battery = 1;
