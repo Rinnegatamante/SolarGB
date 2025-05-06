@@ -84,6 +84,8 @@ typedef struct {
 	uint8_t fetch_x;
 	pixel_t *head;
 	pixel_t *tail;
+	pixel_t pixel_slots[32];
+	uint8_t pixel_idx;
 	size_t size;
 } fifo_t;
 

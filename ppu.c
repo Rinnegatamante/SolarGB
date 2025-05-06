@@ -72,10 +72,10 @@ static inline __attribute__((always_inline)) void ppu_clear_pipeline() {
 	while (ppu.fifo.head) {
 		pixel_t *p = ppu.fifo.head;
 		ppu.fifo.head = ppu.fifo.head->next;
-		free(p);
 	}
 	ppu.fifo.size = 0;
 	ppu.fifo.tail = NULL;
+	ppu.fifo.pixel_idx = 0;
 }
 
 // PPU FIFO fetch functions
@@ -150,7 +150,8 @@ void ppu_push_fetch() {
 		int x = ppu.fifo.fetch_x - (8 - (lcd.scroll_x % 8));
 		if (x >= 0) {
 			for (int i = 0; i < 8; i++) {
-				pixel_t *p = (pixel_t *)malloc(sizeof(pixel_t));
+				pixel_t *p = (pixel_t *)&ppu.fifo.pixel_slots[ppu.fifo.pixel_idx];
+				ppu.fifo.pixel_idx = (ppu.fifo.pixel_idx + 1) % 32;
 				int bitmask = 1 << (7 - i);
 				uint8_t high = (ppu.fifo.bgw_fetch_data[1] & bitmask) != 0 ? 1 : 0;
 				uint8_t low = (ppu.fifo.bgw_fetch_data[2] & bitmask) != 0 ? 2 : 0;
@@ -371,7 +372,6 @@ void ppu_xfer() {
 	if (ppu.fifo.size > 8) {
 		uint32_t clr = ppu.fifo.head->col;
 		pixel_t *p = ppu.fifo.head->next;
-		free(ppu.fifo.head);
 		ppu.fifo.head = p;
 		if (p) {
 			p->prev = NULL;
