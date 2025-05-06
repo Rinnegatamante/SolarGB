@@ -593,21 +593,19 @@ void _IN_JR() {
 	cpu_goto(cpu.regs.PC + val, 0);
 }
 void _IN_RST() {
-	cpu_goto(cpu.instr->param, 1);
+	emu_incr_cycles(2);
+	stack_push16(cpu.regs.PC);
+	cpu.regs.PC = cpu.instr->param;
+	emu_incr_cycles(1);
 }
 void _IN_RETI() {
 	cpu.master_interrupts = 1;
-	if (cpu.instr->cnd) {
-		emu_incr_cycles(1);
-	}
-	if (cpu_check_cond()) {
-		uint16_t low = stack_pop();
-		emu_incr_cycles(1);
-		uint16_t high = stack_pop();
-		emu_incr_cycles(1);
-		cpu.regs.PC = (high << 8) | low;
-		emu_incr_cycles(1);
-	}
+	uint16_t low = stack_pop();
+	emu_incr_cycles(1);
+	uint16_t high = stack_pop();
+	emu_incr_cycles(1);
+	cpu.regs.PC = (high << 8) | low;
+	emu_incr_cycles(1);
 }
 void _IN_RET() {
 	if (cpu.instr->cnd) {
