@@ -497,17 +497,6 @@ ufunc_t cnd_funcs[] = {
 };
 #define cpu_check_cond() cnd_funcs[cpu.instr->cnd]()
 
-static void cpu_goto(uint16_t addr, uint8_t push_pc) {
-	if (cpu_check_cond()) {
-		if (push_pc) {
-			emu_incr_cycles(2);
-			stack_push16(cpu.regs.PC);
-		}
-		cpu.regs.PC = addr;
-		emu_incr_cycles(1);
-	}
-}
-
 // Instruction exection functions
 void _IN_LD() {
 	if (cpu.use_mem_dest) {
@@ -571,14 +560,25 @@ void _IN_PUSH() {
 	emu_incr_cycles(1);
 }
 void _IN_CALL() {
-	cpu_goto(cpu.fetched_data, 1);
+	if (cpu_check_cond()) {
+		emu_incr_cycles(2);
+		stack_push16(cpu.regs.PC);
+		cpu.regs.PC = cpu.fetched_data;
+		emu_incr_cycles(1);
+	}
 }
 void _IN_JP() {
-	cpu_goto(cpu.fetched_data, 0);
+	if (cpu_check_cond()) {
+		cpu.regs.PC = cpu.fetched_data;
+		emu_incr_cycles(1);
+	}
 }
 void _IN_JR() {
 	int8_t val = (int8_t)(cpu.fetched_data & 0xFF);
-	cpu_goto(cpu.regs.PC + val, 0);
+	if (cpu_check_cond()) {
+		cpu.regs.PC += val;
+		emu_incr_cycles(1);
+	}
 }
 void _IN_RST() {
 	emu_incr_cycles(2);
