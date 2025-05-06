@@ -261,18 +261,30 @@ const char *cart_types[] = {
 };
 
 static void cart_init_ram_banks() {
+	// Open sav file if exists
+	char path[256];
+	sprintf(path, "%s.sav", rom.fname);
+	FILE *f = fopen(path, "rb");
+	
 	for (int i = 0; i < 16; i++) {
 		if (rom.ram_banks[i]) {
 			free(rom.ram_banks[i]);
 		}
 		if (i < rom.ram_size / 8) {
 			rom.ram_banks[i] = (uint8_t *)malloc(0x2000);
-			sceClibMemset(rom.ram_banks[i], 0, 0x2000);
+			if (f) {
+				fread(rom.ram_banks[i], 1, 0x2000, f);
+			} else {
+				sceClibMemset(rom.ram_banks[i], 0, 0x2000);
+			}
 		} else {
 			rom.ram_banks[i] = NULL;
 		}
 	}
 	
+	if (f) {
+		fclose(f);
+	}
 	rom.ram_bank = rom.ram_banks[0];
 	rom.ram_bank_num = 0;
 	rom.rom_bank_num = 0;
@@ -280,25 +292,15 @@ static void cart_init_ram_banks() {
 	rom.rom_bank = rom.data + ADDR_ROM_BANK_1;
 }
 
-static void cart_load_battery() {
-	char path[256];
-	sprintf(path, "%s.battery", rom.fname);
-	FILE *f = fopen(path, "rb");
-	if (f) {
-		fread(rom.ram_banks[0], 1, 0x2000, f);
-		fclose(f);
-	}
-}
-
 void cart_save_battery() {
-	if (rom.ram_banks[rom.ram_bank_num]) {
-		char path[256];
-		sprintf(path, "%s.battery", rom.fname);
-		FILE *f = fopen(path, "wb");
-		fwrite(rom.ram_banks[rom.ram_bank_num], 1, 0x2000, f);
-		fclose(f);
-		rom.save_battery = 0;
+	char path[256];
+	sprintf(path, "%s.sav", rom.fname);
+	FILE *f = fopen(path, "wb");
+	for (int i = 0; i < rom.ram_size / 8; i++) {
+		fwrite(rom.ram_banks[i], 1, 0x2000, f);
 	}
+	fclose(f);
+	rom.save_battery = 0;
 }
 
 void cart_load(const char *path) {
@@ -355,7 +357,6 @@ void cart_load(const char *path) {
 			break;
 		}
 	}
-	cart_init_ram_banks();
 	
 	// Parsing battery/mapper info
 	rom.save_battery = 0;
@@ -368,11 +369,12 @@ void cart_load(const char *path) {
 	}
 	if (strstr(cart_types[rom.type], "BATTERY")) {
 		rom.battery = 1;
-		cart_load_battery();
 	} else {
 		rom.battery = 0;
 	}
 	
+	// Initing ram
+	cart_init_ram_banks();
 	
 	// Header checksum check
 	uint16_t x;
