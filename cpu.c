@@ -33,65 +33,65 @@ static instr_t instrs[] = {
 	[0x00] = {.type = IN_NOP},
 	[0x01] = {.type = IN_LD, .addr_mode = AM_R_D16, .reg1 = RT_BC},
 	[0x02] = {.type = IN_LD, .addr_mode = AM_MR_R, .reg1 = RT_BC, .reg2 = RT_A},
-	[0x03] = {.type = IN_INC, .addr_mode = AM_R, .reg1 = RT_BC},
-	[0x04] = {.type = IN_INC, .addr_mode = AM_R, .reg1 = RT_B},
-	[0x05] = {.type = IN_DEC, .addr_mode = AM_R, .reg1 = RT_B},
+	[0x03] = {.type = IN_INC, .reg1 = RT_BC},
+	[0x04] = {.type = IN_INC, .reg1 = RT_B},
+	[0x05] = {.type = IN_DEC, .reg1 = RT_B},
 	[0x06] = {.type = IN_LD, .addr_mode = AM_R_D8, .reg1 = RT_B},
 	[0x07] = {.type = IN_RLCA},
 	[0x08] = {.type = IN_LD, .addr_mode = AM_A16_R, .reg2 = RT_SP},
 	[0x09] = {.type = IN_ADD, .addr_mode = AM_R_R, .reg1 = RT_HL, .reg2 = RT_BC},
 	[0x0A] = {.type = IN_LD, .addr_mode = AM_R_MR, .reg1 = RT_A, .reg2 = RT_BC},
-	[0x0B] = {.type = IN_DEC, .addr_mode = AM_R, .reg1 = RT_BC},
-	[0x0C] = {.type = IN_INC, .addr_mode = AM_R, .reg1 = RT_C},
-	[0x0D] = {.type = IN_DEC, .addr_mode = AM_R, .reg1 = RT_C},
+	[0x0B] = {.type = IN_DEC, .reg1 = RT_BC},
+	[0x0C] = {.type = IN_INC, .reg1 = RT_C},
+	[0x0D] = {.type = IN_DEC, .reg1 = RT_C},
 	[0x0E] = {.type = IN_LD, .addr_mode = AM_R_D8, .reg1 = RT_C},
 	[0x0F] = {.type = IN_RRCA},
 	[0x10] = {.type = IN_STOP},
 	[0x11] = {.type = IN_LD, .addr_mode = AM_R_D16, .reg1 = RT_DE},
 	[0x12] = {.type = IN_LD, .addr_mode = AM_MR_R, .reg1 = RT_DE, .reg2 = RT_A},
-	[0x13] = {.type = IN_INC, .addr_mode = AM_R, .reg1 = RT_DE},
-	[0x14] = {.type = IN_INC, .addr_mode = AM_R, .reg1 = RT_D},
-	[0x15] = {.type = IN_DEC, .addr_mode = AM_R, .reg1 = RT_D},
+	[0x13] = {.type = IN_INC, .reg1 = RT_DE},
+	[0x14] = {.type = IN_INC, .reg1 = RT_D},
+	[0x15] = {.type = IN_DEC, .reg1 = RT_D},
 	[0x16] = {.type = IN_LD, .addr_mode = AM_R_D8, .reg1 = RT_D},
 	[0x17] = {.type = IN_RLA},
 	[0x18] = {.type = IN_JR, .addr_mode = AM_D8},
 	[0x19] = {.type = IN_ADD, .addr_mode = AM_R_R, .reg1 = RT_HL, .reg2 = RT_DE},
 	[0x1A] = {.type = IN_LD, .addr_mode = AM_R_MR, .reg1 = RT_A, .reg2 = RT_DE},
-	[0x1B] = {.type = IN_DEC, .addr_mode = AM_R, .reg1 = RT_DE},
-	[0x1C] = {.type = IN_INC, .addr_mode = AM_R, .reg1 = RT_E},
+	[0x1B] = {.type = IN_DEC, .reg1 = RT_DE},
+	[0x1C] = {.type = IN_INC, .reg1 = RT_E},
 	[0x1D] = {.type = IN_DEC, .addr_mode = AM_R, .reg1 = RT_E},
 	[0x1E] = {.type = IN_LD, .addr_mode = AM_R_D8, .reg1 = RT_E},
 	[0x1F] = {.type = IN_RRA},
 	[0x20] = {.type = IN_JR, .addr_mode = AM_D8, .cnd = CT_NZ},
 	[0x21] = {.type = IN_LD, .addr_mode = AM_R_D16, .reg1 = RT_HL},
 	[0x22] = {.type = IN_LD, .addr_mode = AM_HLI_R, .reg1 = RT_HL, .reg2 = RT_A},
-	[0x23] = {.type = IN_INC, .addr_mode = AM_R, .reg1 = RT_HL},
-	[0x24] = {.type = IN_INC, .addr_mode = AM_R, .reg1 = RT_H},
-	[0x25] = {.type = IN_DEC, .addr_mode = AM_R, .reg1 = RT_H},
+	[0x23] = {.type = IN_INC, .reg1 = RT_HL},
+	[0x24] = {.type = IN_INC, .reg1 = RT_H},
+	[0x25] = {.type = IN_DEC, .reg1 = RT_H},
 	[0x26] = {.type = IN_LD, .addr_mode = AM_R_D8, .reg1 = RT_H},
 	[0x27] = {.type = IN_DAA},
 	[0x28] = {.type = IN_JR, .addr_mode = AM_D8, .cnd = CT_Z},
 	[0x29] = {.type = IN_ADD, .addr_mode = AM_R_R, .reg1 = RT_HL, .reg2 = RT_HL},
 	[0x2A] = {.type = IN_LD, .addr_mode = AM_R_HLI, .reg1 = RT_A, .reg2 = RT_HL},
-	[0x2B] = {.type = IN_DEC, .addr_mode = AM_R, .reg1 = RT_HL},
-	[0x2C] = {.type = IN_INC, .addr_mode = AM_R, .reg1 = RT_L},
-	[0x2D] = {.type = IN_DEC, .addr_mode = AM_R, .reg1 = RT_L},
+	[0x2B] = {.type = IN_DEC, .reg1 = RT_HL},
+	[0x2C] = {.type = IN_INC, .reg1 = RT_L},
+	[0x2D] = {.type = IN_DEC, .reg1 = RT_L},
 	[0x2E] = {.type = IN_LD, .addr_mode = AM_R_D8, .reg1 = RT_L},
 	[0x2F] = {.type = IN_CPL},
 	[0x30] = {.type = IN_JR, .addr_mode = AM_D8, .cnd = CT_NC},
 	[0x31] = {.type = IN_LD, .addr_mode = AM_R_D16, .reg1 = RT_SP},
 	[0x32] = {.type = IN_LD, .addr_mode = AM_HLD_R, .reg1 = RT_HL, .reg2 = RT_A},
-	[0x33] = {.type = IN_INC, .addr_mode = AM_R, .reg1 = RT_SP},
-	[0x34] = {.type = IN_INC, .addr_mode = AM_MR, .reg1 = RT_HL},
-	[0x35] = {.type = IN_DEC, .addr_mode = AM_MR, .reg1 = RT_HL},
+	[0x33] = {.type = IN_INC, .reg1 = RT_SP},
+	[0x34] = {.type = IN_INC, .reg1 = RT_HL},
+	[0x35] = {.type = IN_DEC, .reg1 = RT_HL},
 	[0x36] = {.type = IN_LD, .addr_mode = AM_MR_D8, .reg1 = RT_HL},
 	[0x37] = {.type = IN_SCF},
 	[0x38] = {.type = IN_JR, .addr_mode = AM_D8, .cnd = CT_C},
 	[0x39] = {.type = IN_ADD, .addr_mode = AM_R_R, RT_HL, RT_SP},
 	[0x3A] = {.type = IN_LD, .addr_mode = AM_R_HLD, .reg1 = RT_A, .reg2 = RT_HL},
-	[0x3B] = {.type = IN_DEC, .addr_mode = AM_R, .reg1 = RT_SP},
-	[0x3C] = {.type = IN_INC, .addr_mode = AM_R, .reg1 = RT_A},
-	[0x3D] = {.type = IN_DEC, .addr_mode = AM_R, .reg1 = RT_A},
+	[0x3B] = {.type = IN_DEC, .reg1 = RT_SP},
+	[0x3C] = {.type = IN_INC, .reg1 = RT_A},
+	[0x3D] = {.type = IN_DEC, .reg1 = RT_A},
 	[0x3E] = {.type = IN_LD, .addr_mode = AM_R_D8, .reg1 = RT_A},
 	[0x3F] = {.type = IN_CCF},
 	[0x40] = {.type = IN_LD, .addr_mode = AM_R_R, .reg1 = RT_B, .reg2 = RT_B},
@@ -625,19 +625,23 @@ void _IN_INC() {
 	if (cpu.instr->reg1 >= RT_SP) {
 		emu_incr_cycles(1);
 	}
-	if (cpu.instr->reg1 == RT_HL && cpu.instr->addr_mode == AM_MR) {
+	if (cpu.opcode == 0x34) {
+		emu_incr_cycles(1);
 		uint16_t hl = cpu_read_reg(RT_HL);
 		val = (bus_read(hl) + 1) & 0xFF;
 		bus_write(hl, val);
-	} else {
-		val = cpu_read_reg(cpu.instr->reg1) + 1;
-		cpu_write_reg(cpu.instr->reg1, val);
-		val = cpu_read_reg(cpu.instr->reg1); 
-	}
-	if ((cpu.opcode & 0x03) != 0x03) {
 		CPU_SET_FLAG(FLAG_Z, val == 0);
 		CPU_SET_FLAG(FLAG_N, 0);
 		CPU_SET_FLAG(FLAG_H, (val & 0x0F) == 0);
+	} else {
+		val = cpu_read_reg(cpu.instr->reg1) + 1;
+		cpu_write_reg(cpu.instr->reg1, val);
+		val = cpu_read_reg(cpu.instr->reg1);
+		if ((cpu.opcode & 0x03) != 0x03) {
+			CPU_SET_FLAG(FLAG_Z, val == 0);
+			CPU_SET_FLAG(FLAG_N, 0);
+			CPU_SET_FLAG(FLAG_H, (val & 0x0F) == 0);
+		}
 	}
 }
 void _IN_DEC() {
@@ -645,19 +649,23 @@ void _IN_DEC() {
 	if (cpu.instr->reg1 >= RT_SP) {
 		emu_incr_cycles(1);
 	}
-	if (cpu.instr->reg1 == RT_HL && cpu.instr->addr_mode == AM_MR) {
+	if (cpu.opcode == 0x35) {
+		emu_incr_cycles(1);
 		uint16_t hl = cpu_read_reg(RT_HL);
 		val = bus_read(hl) - 1;
 		bus_write(hl, val);
+		CPU_SET_FLAG(FLAG_Z, val == 0);
+		CPU_SET_FLAG(FLAG_N, 1);
+		CPU_SET_FLAG(FLAG_H, (val & 0x0F) == 0x0F);
 	} else {
 		val = cpu_read_reg(cpu.instr->reg1) - 1;
 		cpu_write_reg(cpu.instr->reg1, val);
 		val = cpu_read_reg(cpu.instr->reg1);
-	}
-	if ((cpu.opcode & 0x0B) != 0x0B) {
-		CPU_SET_FLAG(FLAG_Z, val == 0);
-		CPU_SET_FLAG(FLAG_N, 1);
-		CPU_SET_FLAG(FLAG_H, (val & 0x0F) == 0x0F);
+		if ((cpu.opcode & 0x0B) != 0x0B) {
+			CPU_SET_FLAG(FLAG_Z, val == 0);
+			CPU_SET_FLAG(FLAG_N, 1);
+			CPU_SET_FLAG(FLAG_H, (val & 0x0F) == 0x0F);
+		}
 	}
 }
 void _IN_ADD() {
