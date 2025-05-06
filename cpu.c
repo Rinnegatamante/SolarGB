@@ -291,8 +291,8 @@ void cpu_init() {
 	cpu.regs.SP = 0xFFFE;
 	cpu.regs.IE = 0;
 	cpu.master_interrupts = 0;
-	cpu.interrupts = 0x00;
 	cpu.enable_interrupts = 0;
+	cpu.interrupts = 0x00;
 	cpu.halted = 0;
 }
 
@@ -307,10 +307,10 @@ uint16_t _R_RT_H() { return cpu.regs.H; }
 uint16_t _R_RT_L() { return cpu.regs.L; }
 uint16_t _R_RT_SP() { return cpu.regs.SP; }
 uint16_t _R_RT_PC() { return cpu.regs.PC; }
-uint16_t _R_RT_HL() { return ((uint16_t)cpu.regs.L | (((uint16_t)cpu.regs.H) << 8)); }
-uint16_t _R_RT_AF() { return ((uint16_t)cpu.regs.F | (((uint16_t)cpu.regs.A) << 8)); }
-uint16_t _R_RT_BC() { return ((uint16_t)cpu.regs.C | (((uint16_t)cpu.regs.B) << 8)); }
-uint16_t _R_RT_DE() { return ((uint16_t)cpu.regs.E | (((uint16_t)cpu.regs.D) << 8)); }
+uint16_t _R_RT_HL() { return *(uint16_t *)&cpu.regs.L; }
+uint16_t _R_RT_AF() { return *(uint16_t *)&cpu.regs.F; }
+uint16_t _R_RT_BC() { return *(uint16_t *)&cpu.regs.C; }
+uint16_t _R_RT_DE() { return *(uint16_t *)&cpu.regs.E; }
 rfunc_t reg_read_funcs[] = {
 	[RT_A] = _R_RT_A,
 	[RT_B] = _R_RT_B,
@@ -340,22 +340,10 @@ void _RT_H(uint16_t val) { cpu.regs.H = val; }
 void _RT_L(uint16_t val) { cpu.regs.L = val; }
 void _RT_SP(uint16_t val) { cpu.regs.SP = val; }
 void _RT_PC(uint16_t val) { cpu.regs.PC = val; }
-void _RT_HL(uint16_t val) {
-	cpu.regs.L = val & 0xFF;
-	cpu.regs.H = (val >> 8) & 0xFF;
-}
-void _RT_AF(uint16_t val) {
-	cpu.regs.F = val & 0xFF;
-	cpu.regs.A = (val >> 8) & 0xFF;
-}
-void _RT_BC(uint16_t val) {
-	cpu.regs.C = val & 0xFF;
-	cpu.regs.B = (val >> 8) & 0xFF;
-}
-void _RT_DE(uint16_t val) {
-	cpu.regs.E = val & 0xFF;
-	cpu.regs.D = (val >> 8) & 0xFF;
-}
+void _RT_HL(uint16_t val) { *(uint16_t *)&cpu.regs.L = val; }
+void _RT_AF(uint16_t val) { *(uint16_t *)&cpu.regs.F = val; }
+void _RT_BC(uint16_t val) { *(uint16_t *)&cpu.regs.C = val; }
+void _RT_DE(uint16_t val) { *(uint16_t *)&cpu.regs.E = val; }
 wfunc_t reg_write_funcs[] = {
 	[RT_A] = _RT_A,
 	[RT_B] = _RT_B,
