@@ -94,7 +94,7 @@ typedef struct sprite_t {
 	uint8_t x;
 	uint8_t tile;
 	uint8_t cgb_pal_num : 3;
-	uint8_t vram_bank : 1;
+	uint8_t cgb_vram_bank : 1;
 	uint8_t pal_num : 1;
 	uint8_t x_flip : 1;
 	uint8_t y_flip : 1;
@@ -109,7 +109,7 @@ typedef struct spritelist_t {
 typedef struct {
 	uint64_t cur_frame;
 	uint8_t draw_frame;
-	uint8_t oam_ram[0x40];
+	uint8_t oam_ram[0xA0];
 	uint8_t vram[0x2000];
 	uint32_t lines;
 	uint8_t num_sprites;
@@ -137,7 +137,7 @@ void ppu_show_dbg_tex();
 
 #define LCD_SS_SET(x) ((lcd.lcds & x) == x)
 #define LCDC_SET(x) ((lcd.lcdc & x) == x)
-#define LCDC_WIN_SET() (LCDC_SET(WIN_ENABLE) && lcd.win_x >= 0 && lcd.win_x <= 166 && lcd.win_y >= 0 && lcd.win_y <= GB_SCREEN_H)
+#define LCDC_WIN_SET() (LCDC_SET(WIN_ENABLE) && lcd.win_x >= 0 && lcd.win_x <= 166 && lcd.win_y >= 0 && lcd.win_y < GB_SCREEN_H)
 
 void ppu_draw_last_frame();
 

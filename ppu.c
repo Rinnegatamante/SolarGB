@@ -149,10 +149,10 @@ void ppu_push_fetch() {
 	if (ppu.fifo.size <= 8) {
 		int x = ppu.fifo.fetch_x - (8 - (lcd.scroll_x % 8));
 		if (x >= 0) {
-			for (int i = 0; i < 8; i++) {
-				pixel_t *p = (pixel_t *)&ppu.fifo.pixel_slots[ppu.fifo.pixel_idx];
+			for (uint8_t i = 0; i < 8; i++) {
+				pixel_t *p = &ppu.fifo.pixel_slots[ppu.fifo.pixel_idx];
 				ppu.fifo.pixel_idx = (ppu.fifo.pixel_idx + 1) % 32;
-				int bitmask = 1 << (7 - i);
+				uint8_t bitmask = 1 << (7 - i);
 				uint8_t high = (ppu.fifo.bgw_fetch_data[1] & bitmask) != 0 ? 1 : 0;
 				uint8_t low = (ppu.fifo.bgw_fetch_data[2] & bitmask) != 0 ? 2 : 0;
 				uint8_t bg_idx = high | low;
@@ -169,11 +169,11 @@ void ppu_push_fetch() {
 						if (sprite_x + 8 >= ppu.fifo.fifo_x) {
 							int offs = ppu.fifo.fifo_x - sprite_x;
 							if (offs >= 0 && offs <= 7) {
-								bitmask = ppu.fetched_sprites[j].x_flip ? (1 << (offs)) : (1 << (7 - offs));
+								bitmask = ppu.fetched_sprites[j].x_flip ? (1 << offs) : (1 << (7 - offs));
 								high = (ppu.fifo.sprite_fetch_data[j * 2] & bitmask) != 0 ? 1 : 0;
 								low = (ppu.fifo.sprite_fetch_data[(j * 2) + 1] & bitmask) != 0 ? 2 : 0;
 								uint8_t col = high | low;
-								if (col && ((!ppu.fetched_sprites[j].bg_prio) || bg_idx)) {
+								if (col && ((!ppu.fetched_sprites[j].bg_prio) || (bg_idx == 0))) {
 									p->col = ppu.fetched_sprites[j].pal_num ? lcd.sp2_cols[col] : lcd.sp1_cols[col];
 									break;
 								}
@@ -328,7 +328,7 @@ void ppu_oam() {
 		ppu.sprites = NULL;
 		uint8_t sprite_h = LCDC_SET(OBJ_HEIGHT) ? 16 : 8;
 		sceClibMemset(ppu.sprite_slots, 0, sizeof(spritelist_t) * 10);
-		for (int i = 0; i < 0x40; i += sizeof(sprite_t)) {
+		for (int i = 0; i < 0xA0; i += sizeof(sprite_t)) {
 			sprite_t *s = (sprite_t *)&ppu.oam_ram[i];
 			if (s->x) {
 				if (ppu.num_sprites >= 10) {

@@ -19,8 +19,8 @@ void dma_tick() {
 	if (dma.active) {
 		if (dma.delay) {
 			dma.delay--;
-		} else if (dma.byte < 0x40) {
-			ppu.oam_ram[dma.byte] = bus_read(((uint16_t)dma.val * 0x100) + dma.byte);
+		} else if (dma.byte < 0xA0) {
+			ppu.oam_ram[dma.byte] = bus_read((dma.val * 0x100) + dma.byte);
 		}
 		dma.byte++;
 		dma.active = dma.byte < 0xA0;

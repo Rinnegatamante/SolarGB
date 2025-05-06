@@ -74,7 +74,7 @@ void lcd_bg_write(uint16_t addr, uint8_t val) {
 void lcd_sp1_write(uint16_t addr, uint8_t val) {
 	uint8_t *p = (uint8_t *)&lcd;
 	p[8] = val;
-	uint8_t v = val & 0b11111100;
+	uint8_t v = val & 0xFC;
 	lcd.sp1_cols[0] = ppu.cols[0];
 	lcd.sp1_cols[1] = ppu.cols[(v >> 2) & 0x03];
 	lcd.sp1_cols[2] = ppu.cols[(v >> 4) & 0x03];
@@ -83,7 +83,7 @@ void lcd_sp1_write(uint16_t addr, uint8_t val) {
 void lcd_sp2_write(uint16_t addr, uint8_t val) {
 	uint8_t *p = (uint8_t *)&lcd;
 	p[9] = val;
-	uint8_t v = val & 0b11111100;
+	uint8_t v = val & 0xFC;
 	lcd.sp2_cols[0] = ppu.cols[0];
 	lcd.sp2_cols[1] = ppu.cols[(v >> 2) & 0x03];
 	lcd.sp2_cols[2] = ppu.cols[(v >> 4) & 0x03];
