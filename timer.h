@@ -17,6 +17,16 @@ extern tmr_t timer;
 void timer_init();
 void timer_tick();
 
+uint8_t timer_div_read(uint16_t addr);
+uint8_t timer_tima_read(uint16_t addr);
+uint8_t timer_tma_read(uint16_t addr);
+uint8_t timer_tac_read(uint16_t addr);
+
+void timer_div_write(uint16_t addr, uint8_t val);
+void timer_tima_write(uint16_t addr, uint8_t val);
+void timer_tma_write(uint16_t addr, uint8_t val);
+void timer_tac_write(uint16_t addr, uint8_t val);
+
 #ifdef __cplusplus
 }
 #endif

@@ -64,6 +64,21 @@ extern cart_t rom;
 void cart_load(const char *path);
 void cart_save_battery();
 
+uint8_t cart_read(uint16_t addr);
+uint8_t cart_ram_read(uint16_t addr);
+uint8_t cart_rom_bank_read(uint16_t addr);
+uint8_t cart_mbc3_ram_read(uint16_t addr);
+
+void cart_clock_data_write(uint16_t addr, uint8_t val);
+void cart_ram_write(uint16_t addr, uint8_t val);
+void cart_ram_bank_swap_write(uint16_t addr, uint8_t val);
+void cart_mbc3_rom_bank_swap_write(uint16_t addr, uint8_t val);
+void cart_rom_bank_swap_write(uint16_t addr, uint8_t val);
+void cart_ram_enable_write(uint16_t addr, uint8_t val);
+void cart_mbc3_ram_bank_swap_write(uint16_t addr, uint8_t val);
+void cart_ram_bank_mode_write(uint16_t addr, uint8_t val);
+void cart_mbc3_ram_write(uint16_t addr, uint8_t val);
+
 #ifdef __cplusplus
 }
 #endif

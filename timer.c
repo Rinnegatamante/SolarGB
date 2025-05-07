@@ -43,3 +43,35 @@ void timer_tick() {
 		}
 	}
 }
+
+void timer_div_write(uint16_t addr, uint8_t val) {
+	timer.div = 0;
+}
+
+void timer_tima_write(uint16_t addr, uint8_t val) {
+	timer.tima = val;
+}
+
+void timer_tma_write(uint16_t addr, uint8_t val) {
+	timer.tma = val;
+}
+
+void timer_tac_write(uint16_t addr, uint8_t val) {
+	timer.tac = val;
+}
+
+uint8_t timer_div_read(uint16_t addr) {
+	return timer.div >> 8;
+}
+
+uint8_t timer_tima_read(uint16_t addr) {
+	return timer.tima;
+}
+
+uint8_t timer_tma_read(uint16_t addr) {
+	return timer.tma;
+}
+
+uint8_t timer_tac_read(uint16_t addr) {
+	return timer.tac;
+}

@@ -1207,3 +1207,19 @@ void cpu_step() {
 		cpu.master_interrupts = 1;
 	}
 }
+
+uint8_t cpu_intr_read(uint16_t addr) {
+	return cpu.interrupts;
+}
+
+void cpu_intr_write(uint16_t addr, uint8_t val) {
+	cpu.interrupts = val;
+}
+
+void cpu_ie_write(uint16_t addr, uint8_t val) {
+	cpu.regs.IE = val;
+}
+
+uint8_t cpu_ie_read(uint16_t addr) {
+	return cpu.regs.IE;
+}

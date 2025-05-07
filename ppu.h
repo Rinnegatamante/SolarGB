@@ -141,6 +141,18 @@ void ppu_show_dbg_tex();
 
 void ppu_draw_last_frame();
 
+uint8_t ppu_vram_read(uint16_t addr);
+uint8_t ppu_oam_read(uint16_t addr);
+uint8_t lcd_read(uint16_t addr);
+
+void ppu_vram_write(uint16_t addr, uint8_t val);
+void ppu_oam_write(uint16_t addr, uint8_t val);
+void lcd_reg_write(uint16_t addr, uint8_t val);
+void lcd_dma_write(uint16_t addr, uint8_t val);
+void lcd_bg_write(uint16_t addr, uint8_t val);
+void lcd_sp1_write(uint16_t addr, uint8_t val);
+void lcd_sp2_write(uint16_t addr, uint8_t val);
+
 #ifdef __cplusplus
 }
 #endif

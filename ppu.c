@@ -404,3 +404,69 @@ void ppu_tick() {
 	ppu.lines++;
 	ppu_mode_funcs[lcd.lcds & SS_PPU_MODE]();
 }
+
+void ppu_vram_write(uint16_t addr, uint8_t val) {
+	ppu.vram[addr - ADDR_CHR_RAM] = val;
+}
+
+uint8_t ppu_vram_read(uint16_t addr) {
+	return ppu.vram[addr - ADDR_CHR_RAM];
+}
+
+void ppu_oam_write(uint16_t addr, uint8_t val) {
+	if (!dma.active) {
+		ppu.oam_ram[addr - ADDR_OAM] = val;
+	}
+}
+
+uint8_t ppu_oam_read(uint16_t addr) {
+	if (dma.active) {
+		return 0xFF;
+	}
+	return ppu.oam_ram[addr - ADDR_OAM];
+}
+
+uint8_t lcd_read(uint16_t addr) {
+	uint8_t *p = (uint8_t *)&lcd;
+	return p[addr - ADDR_LCD_REGS];
+}
+
+void lcd_reg_write(uint16_t addr, uint8_t val) {
+	uint8_t *p = (uint8_t *)&lcd;
+	p[addr - ADDR_LCD_REGS] = val;
+}
+
+void lcd_dma_write(uint16_t addr, uint8_t val) {
+	uint8_t *p = (uint8_t *)&lcd;
+	p[6] = val;
+	dma_start(val);
+}
+
+void lcd_bg_write(uint16_t addr, uint8_t val) {
+	uint8_t *p = (uint8_t *)&lcd;
+	p[7] = val;
+	lcd.bg_cols[0] = ppu.cols[val & 0x03];
+	lcd.bg_cols[1] = ppu.cols[(val >> 2) & 0x03];
+	lcd.bg_cols[2] = ppu.cols[(val >> 4) & 0x03];
+	lcd.bg_cols[3] = ppu.cols[(val >> 6) & 0x03];
+}
+
+void lcd_sp1_write(uint16_t addr, uint8_t val) {
+	uint8_t *p = (uint8_t *)&lcd;
+	p[8] = val;
+	uint8_t v = val & 0xFC;
+	lcd.sp1_cols[0] = ppu.cols[0];
+	lcd.sp1_cols[1] = ppu.cols[(v >> 2) & 0x03];
+	lcd.sp1_cols[2] = ppu.cols[(v >> 4) & 0x03];
+	lcd.sp1_cols[3] = ppu.cols[(v >> 6) & 0x03];
+}
+
+void lcd_sp2_write(uint16_t addr, uint8_t val) {
+	uint8_t *p = (uint8_t *)&lcd;
+	p[9] = val;
+	uint8_t v = val & 0xFC;
+	lcd.sp2_cols[0] = ppu.cols[0];
+	lcd.sp2_cols[1] = ppu.cols[(v >> 2) & 0x03];
+	lcd.sp2_cols[2] = ppu.cols[(v >> 4) & 0x03];
+	lcd.sp2_cols[3] = ppu.cols[(v >> 6) & 0x03];
+}

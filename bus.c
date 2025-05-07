@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "cart.h"
+#include "apu.h"
 #include "bus.h"
 #include "cpu.h"
 #include "dma.h"
@@ -14,177 +15,17 @@
 static uint8_t serial_data[2] = {};
 static uint8_t keys = 0;
 
-// Bus write functions
-void null_write(uint16_t addr, uint8_t val) {}
-void ppu_vram_write(uint16_t addr, uint8_t val) {
-	ppu.vram[addr - ADDR_CHR_RAM] = val;
-}
-void wram_write(uint16_t addr, uint8_t val) {
-	wram[addr - ADDR_RAM_BANK_0] = val;
-}
-void oam_write(uint16_t addr, uint8_t val) {
-	if (!dma.active) {
-		ppu.oam_ram[addr - ADDR_OAM] = val;
-	}
-}
-void ie_write(uint16_t addr, uint8_t val) {
-	cpu.regs.IE = val;
-}
-void hram_write(uint16_t addr, uint8_t val) {
-	hram[addr - ADDR_HRAM] = val;
-}
-void serial_write(uint16_t addr, uint8_t val) {
-	serial_data[addr - (ADDR_IO_REGS + 1)] = 0;
-}
-void timer_div_write(uint16_t addr, uint8_t val) {
-	timer.div = 0;
-}
-void timer_tima_write(uint16_t addr, uint8_t val) {
-	timer.tima = val;
-}
-void timer_tma_write(uint16_t addr, uint8_t val) {
-	timer.tma = val;
-}
-void timer_tac_write(uint16_t addr, uint8_t val) {
-	timer.tac = val;
-}
-void cpu_intr_write(uint16_t addr, uint8_t val) {
-	cpu.interrupts = val;
-}
-void gamepad_write(uint16_t addr, uint8_t val) {
-	keys = val;
-}
-void lcd_reg_write(uint16_t addr, uint8_t val) {
-	uint8_t *p = (uint8_t *)&lcd;
-	p[addr - ADDR_LCD_REGS] = val;
-}
-void lcd_dma_write(uint16_t addr, uint8_t val) {
-	uint8_t *p = (uint8_t *)&lcd;
-	p[6] = val;
-	dma_start(val);
-}
-void lcd_bg_write(uint16_t addr, uint8_t val) {
-	uint8_t *p = (uint8_t *)&lcd;
-	p[7] = val;
-	lcd.bg_cols[0] = ppu.cols[val & 0x03];
-	lcd.bg_cols[1] = ppu.cols[(val >> 2) & 0x03];
-	lcd.bg_cols[2] = ppu.cols[(val >> 4) & 0x03];
-	lcd.bg_cols[3] = ppu.cols[(val >> 6) & 0x03];
-}
-void lcd_sp1_write(uint16_t addr, uint8_t val) {
-	uint8_t *p = (uint8_t *)&lcd;
-	p[8] = val;
-	uint8_t v = val & 0xFC;
-	lcd.sp1_cols[0] = ppu.cols[0];
-	lcd.sp1_cols[1] = ppu.cols[(v >> 2) & 0x03];
-	lcd.sp1_cols[2] = ppu.cols[(v >> 4) & 0x03];
-	lcd.sp1_cols[3] = ppu.cols[(v >> 6) & 0x03];
-}
-void lcd_sp2_write(uint16_t addr, uint8_t val) {
-	uint8_t *p = (uint8_t *)&lcd;
-	p[9] = val;
-	uint8_t v = val & 0xFC;
-	lcd.sp2_cols[0] = ppu.cols[0];
-	lcd.sp2_cols[1] = ppu.cols[(v >> 2) & 0x03];
-	lcd.sp2_cols[2] = ppu.cols[(v >> 4) & 0x03];
-	lcd.sp2_cols[3] = ppu.cols[(v >> 6) & 0x03];
-}
-void cart_ram_enable_write(uint16_t addr, uint8_t val) {
-	rom.ram_enabled = ((val & 0x0F) == 0x0A);
-}
-void cart_rom_bank_swap_write(uint16_t addr, uint8_t val) {
-	rom.rom_bank_num = val & 0x1F;
-	rom.rom_bank = rom.data + (ADDR_ROM_BANK_1 * rom.rom_bank_num);
-}
-void cart_mbc3_rom_bank_swap_write(uint16_t addr, uint8_t val) {
-	rom.rom_bank_num = val & 0x7F;
-	rom.rom_bank = rom.data + (ADDR_ROM_BANK_1 * rom.rom_bank_num);
-}
-void cart_ram_bank_swap_write(uint16_t addr, uint8_t val) {
-	rom.ram_bank_num = val & 0x03;
-	rom.ram_bank = rom.ram_banks[rom.ram_bank_num];
-	if (rom.ram_banking && rom.save_battery) {
-		cart_save_battery();
-	}
-}
-void cart_mbc3_ram_bank_swap_write(uint16_t addr, uint8_t val) {
-	rom.ram_bank_num = val & 0x07;
-	rom.rtc_reg_num = (val >> 3) & 0x07;
-	rom.ram_banking = rom.rtc_reg_num == 0;
-	rom.ram_bank = rom.ram_banks[rom.ram_bank_num];
-	if (rom.ram_banking && rom.save_battery) {
-		cart_save_battery();
-	}
-}
-void cart_ram_bank_mode_write(uint16_t addr, uint8_t val) {
-	rom.ram_banking = val & 1;
-	if (rom.ram_banking && rom.save_battery) {
-		cart_save_battery();
-	}
-}
-void cart_ram_write(uint16_t addr, uint8_t val) {
-	if (rom.ram_enabled && rom.ram_banks[rom.ram_bank_num] != NULL) {
-		rom.ram_bank[addr - 0xA000] = val;
-		if (rom.battery) {
-			rom.save_battery = 1;
-		}
-	}
-}
-void cart_mbc3_ram_write(uint16_t addr, uint8_t val) {
-	if (rom.ram_enabled) {
-		if (rom.ram_banking) {
-			rom.ram_bank[addr - 0xA000] = val;
-			if (rom.battery) {
-				rom.save_battery = 1;
-			}
-		} else {
-			((uint8_t *)&rom.rtc_regs)[rom.rtc_reg_num] = val;
-		}
-	}
-}
-void clock_data_write(uint16_t addr, uint8_t val) {
-	// TODO
-}
-bus_wfuncs_t bus_write_funcs[0x10000] = {};
-
-// Bus read functions
 uint8_t null_read(uint16_t addr) { return 0; }
-uint8_t ppu_vram_read(uint16_t addr) {
-	return ppu.vram[addr - ADDR_CHR_RAM];
-}
-uint8_t wram_read(uint16_t addr) {
-	return wram[addr - ADDR_RAM_BANK_0];
-}
-uint8_t oam_read(uint16_t addr) {
-	if (dma.active) {
-		return 0xFF;
-	}
-	return ppu.oam_ram[addr - ADDR_OAM];
-}
-uint8_t ie_read(uint16_t addr) {
-	return cpu.regs.IE;
-}
-uint8_t hram_read(uint16_t addr) {
-	return hram[addr - ADDR_HRAM];
-}
+void null_write(uint16_t addr, uint8_t val) {}
+
 uint8_t serial_read(uint16_t addr) {
 	return serial_data[addr - (ADDR_IO_REGS + 1)];
 }
-uint8_t timer_div_read(uint16_t addr) {
-	return timer.div >> 8;
+
+void serial_write(uint16_t addr, uint8_t val) {
+	serial_data[addr - (ADDR_IO_REGS + 1)] = 0;
 }
-uint8_t timer_tima_read(uint16_t addr) {
-	return timer.tima;
-}
-uint8_t timer_tma_read(uint16_t addr) {
-	return timer.tma;
-}
-uint8_t timer_tac_read(uint16_t addr) {
-	return timer.tac;
-}
-uint8_t cpu_intr_read(uint16_t addr) {
-	return cpu.interrupts;
-}
+
 uint8_t gamepad_read(uint16_t addr) {
 	uint8_t res = 0xCF;
 	if ((keys & 0x10) == 0x10) {
@@ -217,31 +58,20 @@ uint8_t gamepad_read(uint16_t addr) {
 	}
 	return res;
 }
-uint8_t lcd_read(uint16_t addr) {
-	uint8_t *p = (uint8_t *)&lcd;
-	return p[addr - ADDR_LCD_REGS];
+
+void gamepad_write(uint16_t addr, uint8_t val) {
+	keys = val;
 }
-uint8_t cart_read(uint16_t addr) {
-	return rom.data[addr];
+
+void apu_write(uint16_t addr, uint8_t val) {
+	//((uint8_t *)&apu.regs)[addr - 0xFF10] = val;
 }
-uint8_t cart_ram_read(uint16_t addr) {
-	if (!rom.ram_enabled || rom.ram_banks[rom.ram_bank_num] == NULL) {
-		return 0xFF;
-	}
-	return rom.ram_banks[rom.ram_bank_num][addr - 0xA000];
+
+uint8_t apu_read(uint16_t addr) {
+	return 0;//((uint8_t *)&apu.regs)[addr - 0xFF10];
 }
-uint8_t cart_mbc3_ram_read(uint16_t addr) {
-	if (!rom.ram_enabled) {
-		return 0xFF;
-	}
-	if (rom.ram_banking) {
-		return rom.ram_banks[rom.ram_bank_num][addr - 0xA000];
-	}
-	return ((uint8_t *)&rom.rtc_regs)[rom.rtc_reg_num];
-}
-uint8_t cart_rom_bank_read(uint16_t addr) {
-	return rom.rom_bank[addr - 0x4000];
-}
+
+bus_wfuncs_t bus_write_funcs[0x10000] = {};
 bus_rfuncs_t bus_read_funcs[0x10000] = {};
 
 #define MAP_R_RANGE(min, max, func) \
@@ -260,6 +90,10 @@ bus_rfuncs_t bus_read_funcs[0x10000] = {};
 		bus_write_funcs[i] = wf; \
 	}
 
+#define MAP_RW_FUNC(addr, rf, wf) \
+	bus_read_funcs[addr] = rf; \
+	bus_write_funcs[addr] = wf;
+
 void bus_init() {
 	serial_data[0] = serial_data[1] = 0;
 	
@@ -275,7 +109,7 @@ void bus_init() {
 		MAP_W_RANGE(0, 0x2000, cart_ram_enable_write);
 		MAP_W_RANGE(0x2000, 0x4000, cart_mbc3_rom_bank_swap_write);
 		MAP_W_RANGE(0x4000, 0x6000, cart_mbc3_ram_bank_swap_write);
-		MAP_W_RANGE(0x6000, ADDR_CHR_RAM, clock_data_write);
+		MAP_W_RANGE(0x6000, ADDR_CHR_RAM, cart_clock_data_write);
 		MAP_R_RANGE(0, ADDR_ROM_BANK_1, cart_read);
 		MAP_R_RANGE(ADDR_ROM_BANK_1, ADDR_CHR_RAM, cart_rom_bank_read);
 	} else {
@@ -294,41 +128,31 @@ void bus_init() {
 	// Reserved echo RAM
 	MAP_RW_RANGE(ADDR_ECHO_RAM, ADDR_OAM, null_read, null_write);
 	// OAM
-	MAP_RW_RANGE(ADDR_OAM, ADDR_RESERVED, oam_read, oam_write);
+	MAP_RW_RANGE(ADDR_OAM, ADDR_RESERVED, ppu_oam_read, ppu_oam_write);
 	// Reserved section
 	MAP_RW_RANGE(ADDR_RESERVED, ADDR_IO_REGS, null_read, null_write);
 	// IO Registers
-	bus_write_funcs[ADDR_IO_REGS] = gamepad_write;
-	bus_read_funcs[ADDR_IO_REGS] = gamepad_read;
-	bus_write_funcs[ADDR_IO_REGS + 1] = serial_write;
-	bus_read_funcs[ADDR_IO_REGS + 1] = serial_read;
-	bus_write_funcs[ADDR_IO_REGS + 2] = serial_write;
-	bus_read_funcs[ADDR_IO_REGS + 2] = serial_read;
-	bus_write_funcs[ADDR_IO_REGS + 3] = null_write;
-	bus_read_funcs[ADDR_IO_REGS + 3] = null_read;
-	bus_write_funcs[ADDR_IO_REGS + 4] = timer_div_write;
-	bus_read_funcs[ADDR_IO_REGS + 4] = timer_div_read;
-	bus_write_funcs[ADDR_IO_REGS + 5] = timer_tima_write;
-	bus_read_funcs[ADDR_IO_REGS + 5] = timer_tima_read;
-	bus_write_funcs[ADDR_IO_REGS + 6] = timer_tma_write;
-	bus_read_funcs[ADDR_IO_REGS + 6] = timer_tma_read;
-	bus_write_funcs[ADDR_IO_REGS + 7] = timer_tac_write;
-	bus_read_funcs[ADDR_IO_REGS + 7] = timer_tac_read;
-	MAP_RW_RANGE(ADDR_IO_REGS + 8, ADDR_IO_REGS + 0x0F, null_read, null_write);
-	bus_write_funcs[ADDR_IO_REGS + 0x0F] = cpu_intr_write;
-	bus_read_funcs[ADDR_IO_REGS + 0x0F] = cpu_intr_read;
-	MAP_RW_RANGE(ADDR_IO_REGS + 0x10, ADDR_LCD_REGS, null_read, null_write);
+	MAP_RW_FUNC(ADDR_IO_REGS, gamepad_read, gamepad_write)
+	MAP_RW_FUNC(ADDR_IO_REGS + 0x01, serial_read, serial_write)
+	MAP_RW_FUNC(ADDR_IO_REGS + 0x02, serial_read, serial_write)
+	MAP_RW_FUNC(ADDR_IO_REGS + 0x03, null_read, null_write)
+	MAP_RW_FUNC(ADDR_IO_REGS + 0x04, timer_div_read, timer_div_write)
+	MAP_RW_FUNC(ADDR_IO_REGS + 0x05, timer_tima_read, timer_tima_write)
+	MAP_RW_FUNC(ADDR_IO_REGS + 0x06, timer_tma_read, timer_tma_write)
+	MAP_RW_FUNC(ADDR_IO_REGS + 0x07, timer_tac_read, timer_tac_write)
+	MAP_RW_RANGE(ADDR_IO_REGS + 0x08, ADDR_IO_REGS + 0x0F, null_read, null_write);
+	MAP_RW_FUNC(ADDR_IO_REGS + 0x0F, cpu_intr_read, cpu_intr_write)
+	MAP_RW_RANGE(ADDR_IO_REGS + 0x10, ADDR_LCD_REGS, apu_read, apu_write);
 	MAP_RW_RANGE(ADDR_LCD_REGS, ADDR_LCD_REGS + 0x0C, lcd_read, lcd_reg_write);
-	bus_write_funcs[ADDR_LCD_REGS + 6] = lcd_dma_write;
-	bus_write_funcs[ADDR_LCD_REGS + 7] = lcd_bg_write;
-	bus_write_funcs[ADDR_LCD_REGS + 8] = lcd_sp1_write;
-	bus_write_funcs[ADDR_LCD_REGS + 9] = lcd_sp2_write;
+	bus_write_funcs[ADDR_LCD_REGS + 0x06] = lcd_dma_write;
+	bus_write_funcs[ADDR_LCD_REGS + 0x06] = lcd_bg_write;
+	bus_write_funcs[ADDR_LCD_REGS + 0x06] = lcd_sp1_write;
+	bus_write_funcs[ADDR_LCD_REGS + 0x06] = lcd_sp2_write;
 	MAP_RW_RANGE(ADDR_LCD_REGS + 0x0C, ADDR_HRAM, null_read, null_write);
 	// HRAM
 	MAP_RW_RANGE(ADDR_HRAM, ADDR_IE_REG, hram_read, hram_write);
 	// Interrupt Enable register
-	bus_write_funcs[ADDR_IE_REG] = ie_write;
-	bus_read_funcs[ADDR_IE_REG] = ie_read;
+	MAP_RW_FUNC(ADDR_IE_REG, cpu_ie_read, cpu_ie_write)
 
 #if 0
 	// Sanity check

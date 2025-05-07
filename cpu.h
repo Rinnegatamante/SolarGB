@@ -201,6 +201,12 @@ static inline __attribute__((always_inline)) uint16_t stack_ppop16() {
 	return (high << 8) | low;
 }
 
+uint8_t cpu_intr_read(uint16_t addr);
+uint8_t cpu_ie_read(uint16_t addr);
+
+void cpu_intr_write(uint16_t addr, uint8_t val);
+void cpu_ie_write(uint16_t addr, uint8_t val);
+
 #ifdef __cplusplus
 }
 #endif
