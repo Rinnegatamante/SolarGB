@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include "apu.h"
 #include "bus.h"
 #include "cart.h"
 #include "cpu.h"
@@ -23,18 +24,20 @@ void emu_incr_cycles(uint32_t cycles) {
 		for (int j = 0; j < 4; j++) {
 			timer_tick();
 			ppu_tick();
+			apu_tick();
 		}
 		dma_tick();
 	}
 }
 
-int emu_main (unsigned int argc, void *argv) {
+int emu_main(unsigned int argc, void *argv) {
 	bus_init();
 	ram_init();
 	ppu_init();
 	cpu_init();
 	timer_init();
 	emu.state = EMU_RUNNING;
+	apu_init();
 	emu.frametime_tick = sceKernelGetProcessTimeLow();
 
 	while (emu.state != EMU_NOT_RUNNING) {

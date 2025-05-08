@@ -6,7 +6,8 @@ LIBS = -limgui -lvitaGL -lvitashark -lSceShaccCgExt -ltaihen_stub -lSceShaccCg_s
 	-lSceDisplay_stub -lSceGxm_stub -lSceCtrl_stub -lSceTouch_stub -lm -lSceAppMgr_stub \
 	-lSceAppUtil_stub -lScePower_stub -lSceLibKernel_stub -lSceSysmodule_stub
 
-CFILES = bus.o \
+CFILES = apu.o \
+	bus.o \
 	cart.o \
 	cpu.o \
 	emu.o \
