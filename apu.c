@@ -35,6 +35,8 @@ int audio_thread(unsigned int argc, void *argv) {
 		}
 	}
 	
+	sceAudioOutReleasePort(ch);
+	sceKernelDeleteSema(audio_mutex);
 	return sceKernelExitDeleteThread(0);
 }
 
