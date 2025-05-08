@@ -1123,6 +1123,580 @@ func_t instr_log_funcs[] = {
 };
 #define cpu_stringify_instr() instr_log_funcs[cpu.instr->addr_mode]()
 
+void IN_x00() {
+}
+
+void IN_x01() {
+	uint16_t low = bus_read(cpu.regs.PC);
+	emu_incr_cycles(1);
+	uint16_t high = bus_read(cpu.regs.PC + 1);
+	emu_incr_cycles(1);
+	uint16_t fetched_data = low | (high << 8);
+	cpu.regs.PC += 2;
+	*(uint16_t *)&cpu.regs.C = fetched_data;
+}
+
+void IN_x02() {
+	bus_write(*(uint16_t *)&cpu.regs.C, cpu.regs.A);
+	emu_incr_cycles(1);
+}
+
+void IN_x06() {
+	uint8_t fetched_data = bus_read(cpu.regs.PC);
+	emu_incr_cycles(1);
+	cpu.regs.PC++;
+	cpu.regs.B = fetched_data;
+}
+
+void IN_x07() {
+	uint8_t val = (cpu.regs.A >> 7) & 1;
+	cpu.regs.A = val | (cpu.regs.A << 1);
+	CPU_SET_FLAG(FLAG_Z, 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, val);
+}
+
+void IN_x08() {
+	uint16_t low = bus_read(cpu.regs.PC);
+	emu_incr_cycles(1);
+	uint16_t high = bus_read(cpu.regs.PC + 1);
+	emu_incr_cycles(1);
+	uint16_t mem_dest = low | (high << 8);
+	cpu.regs.PC += 2;
+	emu_incr_cycles(1);
+	bus_write16(mem_dest, cpu.regs.SP);
+	emu_incr_cycles(1);
+}
+
+void IN_x0A() {
+	uint8_t fetched_data = bus_read(*(uint16_t *)&cpu.regs.C);
+	emu_incr_cycles(1);
+	cpu.regs.A = fetched_data;
+}
+
+void IN_x0B() {
+	emu_incr_cycles(1);
+	*(uint16_t *)&cpu.regs.C = *(uint16_t *)&cpu.regs.C - 1;
+}
+
+void IN_x0E() {
+	uint8_t fetched_data = bus_read(cpu.regs.PC);
+	emu_incr_cycles(1);
+	cpu.regs.PC++;
+	cpu.regs.C = fetched_data;
+}
+
+void IN_x0F() {
+	uint8_t val = cpu.regs.A & 1;
+	cpu.regs.A = (val << 7) | (cpu.regs.A >> 1);
+	CPU_SET_FLAG(FLAG_Z, 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, val);
+}
+
+void IN_x10() {
+	sceClibPrintf("IN_STOP: NOIMPL\n");
+}
+
+void IN_x11() {
+	uint16_t low = bus_read(cpu.regs.PC);
+	emu_incr_cycles(1);
+	uint16_t high = bus_read(cpu.regs.PC + 1);
+	emu_incr_cycles(1);
+	uint16_t fetched_data = low | (high << 8);
+	cpu.regs.PC += 2;
+	*(uint16_t *)&cpu.regs.E = fetched_data;
+}
+
+void IN_x12() {
+	bus_write(*(uint16_t *)&cpu.regs.E, cpu.regs.A);
+	emu_incr_cycles(1);
+}
+
+void IN_x16() {
+	uint8_t fetched_data = bus_read(cpu.regs.PC);
+	emu_incr_cycles(1);
+	cpu.regs.PC++;
+	cpu.regs.D = fetched_data;
+}
+
+void IN_x18() {
+	uint8_t fetched_data = bus_read(cpu.regs.PC);
+	emu_incr_cycles(1);
+	cpu.regs.PC++;
+	int8_t val = (int8_t)fetched_data;
+	cpu.regs.PC += val;
+	emu_incr_cycles(1);
+}
+
+void IN_x1A() {
+	uint8_t fetched_data = bus_read(*(uint16_t *)&cpu.regs.E);
+	emu_incr_cycles(1);
+	cpu.regs.A = fetched_data;
+}
+
+void IN_x1E() {
+	uint8_t fetched_data = bus_read(cpu.regs.PC);
+	emu_incr_cycles(1);
+	cpu.regs.PC++;
+	cpu.regs.E = fetched_data;
+}
+
+void IN_x20() {
+	uint8_t fetched_data = bus_read(cpu.regs.PC);
+	emu_incr_cycles(1);
+	cpu.regs.PC++;
+	int8_t val = (int8_t)fetched_data;
+	if ((cpu.regs.F & FLAG_Z) == 0) {
+		cpu.regs.PC += val;
+		emu_incr_cycles(1);
+	}
+}
+
+void IN_x21() {
+	uint16_t low = bus_read(cpu.regs.PC);
+	emu_incr_cycles(1);
+	uint16_t high = bus_read(cpu.regs.PC + 1);
+	emu_incr_cycles(1);
+	uint16_t fetched_data = low | (high << 8);
+	cpu.regs.PC += 2;
+	*(uint16_t *)&cpu.regs.L = fetched_data;
+}
+
+void IN_x22() {
+	uint8_t fetched_data = cpu.regs.A;
+	uint16_t mem_dest = *(uint16_t *)&cpu.regs.L;
+	*(uint16_t *)&cpu.regs.L = *(uint16_t *)&cpu.regs.L + 1;
+	bus_write(mem_dest, fetched_data);
+	emu_incr_cycles(1);
+}
+
+void IN_x23() {
+	emu_incr_cycles(1);
+	*(uint16_t *)&cpu.regs.L = *(uint16_t *)&cpu.regs.L + 1;
+}
+
+void IN_x26() {
+	uint8_t fetched_data = bus_read(cpu.regs.PC);
+	emu_incr_cycles(1);
+	cpu.regs.PC++;
+	cpu.regs.H = fetched_data;
+}
+
+void IN_x28() {
+	uint8_t fetched_data = bus_read(cpu.regs.PC);
+	emu_incr_cycles(1);
+	cpu.regs.PC++;
+	int8_t val = (int8_t)fetched_data;
+	if ((cpu.regs.F & FLAG_Z) == FLAG_Z) {
+		cpu.regs.PC += val;
+		emu_incr_cycles(1);
+	}
+}
+
+void IN_x2A() {
+	uint8_t fetched_data = bus_read(*(uint16_t *)&cpu.regs.L);
+	emu_incr_cycles(1);
+	*(uint16_t *)&cpu.regs.L = *(uint16_t *)&cpu.regs.L + 1;
+	cpu.regs.A = fetched_data;
+}
+
+void IN_x2E() {
+	uint8_t fetched_data = bus_read(cpu.regs.PC);
+	emu_incr_cycles(1);
+	cpu.regs.PC++;
+	cpu.regs.L = fetched_data;
+}
+
+void IN_x2F() {
+	cpu.regs.A = ~cpu.regs.A;
+	CPU_SET_FLAG(FLAG_N, 1);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_x31() {
+	uint16_t low = bus_read(cpu.regs.PC);
+	emu_incr_cycles(1);
+	uint16_t high = bus_read(cpu.regs.PC + 1);
+	emu_incr_cycles(1);
+	uint16_t fetched_data = low | (high << 8);
+	cpu.regs.PC += 2;
+	cpu.regs.SP = fetched_data;
+}
+
+void IN_x36() {
+	uint8_t fetched_data = bus_read(cpu.regs.PC);
+	emu_incr_cycles(1);
+	cpu.regs.PC++;
+	bus_write(*(uint16_t *)&cpu.regs.L, fetched_data);
+	emu_incr_cycles(1);
+}
+
+void IN_x3E() {
+	uint8_t fetched_data = bus_read(cpu.regs.PC);
+	emu_incr_cycles(1);
+	cpu.regs.PC++;
+	cpu.regs.A = fetched_data;
+}
+
+void IN_x40() {
+}
+
+void IN_x41() {
+	cpu.regs.B = cpu.regs.C;
+}
+
+void IN_x42() {
+	cpu.regs.B = cpu.regs.D;
+}
+
+void IN_x43() {
+	cpu.regs.B = cpu.regs.E;
+}
+
+void IN_x44() {
+	cpu.regs.B = cpu.regs.H;
+}
+
+void IN_x45() {
+	cpu.regs.B = cpu.regs.L;
+}
+
+void IN_x47() {
+	cpu.regs.B = cpu.regs.A;
+}
+
+void IN_x48() {
+	cpu.regs.C = cpu.regs.B;
+}
+
+void IN_x49() {
+}
+
+void IN_x4A() {
+	cpu.regs.C = cpu.regs.D;
+}
+
+void IN_x4B() {
+	cpu.regs.C = cpu.regs.E;
+}
+
+void IN_x4C() {
+	cpu.regs.C = cpu.regs.H;
+}
+
+void IN_x4D() {
+	cpu.regs.C = cpu.regs.L;
+}
+
+void IN_x4F() {
+	cpu.regs.C = cpu.regs.A;
+}
+
+void IN_x50() {
+	cpu.regs.D = cpu.regs.B;
+}
+
+void IN_x51() {
+	cpu.regs.D = cpu.regs.C;
+}
+
+void IN_x52() {
+}
+
+void IN_x53() {
+	cpu.regs.D = cpu.regs.E;
+}
+
+void IN_x54() {
+	cpu.regs.D = cpu.regs.H;
+}
+
+void IN_x55() {
+	cpu.regs.D = cpu.regs.L;
+}
+
+void IN_x57() {
+	cpu.regs.D = cpu.regs.A;
+}
+
+void IN_x58() {
+	cpu.regs.E = cpu.regs.B;
+}
+
+void IN_x59() {
+	cpu.regs.E = cpu.regs.C;
+}
+
+void IN_x5A() {
+	cpu.regs.E = cpu.regs.D;
+}
+
+void IN_x5B() {
+}
+
+void IN_x5C() {
+	cpu.regs.E = cpu.regs.H;
+}
+
+void IN_x5D() {
+	cpu.regs.E = cpu.regs.L;
+}
+
+void IN_x5F() {
+	cpu.regs.E = cpu.regs.A;
+}
+
+void IN_x60() {
+	cpu.regs.H = cpu.regs.B;
+}
+
+void IN_x61() {
+	cpu.regs.H = cpu.regs.C;
+}
+
+void IN_x62() {
+	cpu.regs.H = cpu.regs.D;
+}
+
+void IN_x63() {
+	cpu.regs.H = cpu.regs.E;
+}
+
+void IN_x64() {
+}
+
+void IN_x65() {
+	cpu.regs.H = cpu.regs.L;
+}
+
+void IN_x67() {
+	cpu.regs.H = cpu.regs.A;
+}
+
+void IN_x68() {
+	cpu.regs.L = cpu.regs.B;
+}
+
+void IN_x69() {
+	cpu.regs.L = cpu.regs.C;
+}
+
+void IN_x6A() {
+	cpu.regs.L = cpu.regs.D;
+}
+
+void IN_x6B() {
+	cpu.regs.L = cpu.regs.E;
+}
+
+void IN_x6C() {
+	cpu.regs.L = cpu.regs.H;
+}
+
+void IN_x6D() {
+}
+
+void IN_x6F() {
+	cpu.regs.L = cpu.regs.A;
+}
+
+void IN_x78() {
+	cpu.regs.A = cpu.regs.B;
+}
+
+void IN_x79() {
+	cpu.regs.A = cpu.regs.C;
+}
+
+void IN_x7A() {
+	cpu.regs.A = cpu.regs.D;
+}
+
+void IN_x7B() {
+	cpu.regs.A = cpu.regs.E;
+}
+
+void IN_x7C() {
+	cpu.regs.A = cpu.regs.H;
+}
+
+void IN_x7D() {
+	cpu.regs.A = cpu.regs.L;
+}
+
+void IN_x7F() {
+}
+
+void IN_xAF() {
+	cpu.regs.A = 0;
+	CPU_SET_FLAG(FLAG_Z, 1);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, 0);
+}
+
+void IN_xB1() {
+	cpu.regs.A |= cpu.regs.C;
+	CPU_SET_FLAG(FLAG_Z, cpu.regs.A == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, 0);
+}
+
+void IN_xC3() {
+	uint16_t low = bus_read(cpu.regs.PC);
+	emu_incr_cycles(1);
+	uint16_t high = bus_read(cpu.regs.PC + 1);
+	emu_incr_cycles(1);
+	cpu.regs.PC = low | (high << 8);
+	emu_incr_cycles(1);
+}
+
+void IN_xCD() {
+	uint16_t low = bus_read(cpu.regs.PC);
+	emu_incr_cycles(1);
+	uint16_t high = bus_read(cpu.regs.PC + 1);
+	emu_incr_cycles(1);
+	uint16_t fetched_data = low | (high << 8);
+	cpu.regs.PC += 2;
+	emu_incr_cycles(2);
+	stack_push16(cpu.regs.PC);
+	cpu.regs.PC = fetched_data;
+	emu_incr_cycles(1);
+}
+
+void IN_xE6() {
+	uint8_t fetched_data = bus_read(cpu.regs.PC);
+	emu_incr_cycles(1);
+	cpu.regs.PC++;
+	cpu.regs.A &= fetched_data;
+	CPU_SET_FLAG(FLAG_Z, cpu.regs.A == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+	CPU_SET_FLAG(FLAG_C, 0);
+}
+
+void IN_xF0() {
+	uint8_t fetched_data = bus_read(cpu.regs.PC);
+	emu_incr_cycles(1);
+	cpu.regs.PC++;
+	cpu.regs.A = bus_read(fetched_data | 0xFF00);
+	emu_incr_cycles(1);
+}
+	
+void IN_xF3() {
+	cpu.master_interrupts = 0;
+}
+
+void IN_xFB() {
+	cpu.enable_interrupts = 1;
+}
+
+void IN_xFE() {
+	uint8_t fetched_data = bus_read(cpu.regs.PC);
+	emu_incr_cycles(1);
+	cpu.regs.PC++;
+	int val = (int)cpu.regs.A - (int)fetched_data;
+	CPU_SET_FLAG(FLAG_Z, val == 0);
+	CPU_SET_FLAG(FLAG_N, 1);
+	CPU_SET_FLAG(FLAG_H, ((int)cpu.regs.A & 0x0F) - ((int)fetched_data & 0x0F) < 0);
+	CPU_SET_FLAG(FLAG_C, val < 0);
+}
+
+func_t optimized_instrs[] = {
+	[0x00] = IN_x00,
+	[0x01] = IN_x01,
+	[0x02] = IN_x02,
+	[0x06] = IN_x06,
+	[0x07] = IN_x07,
+	[0x08] = IN_x08,
+	[0x0A] = IN_x0A,
+	[0x0B] = IN_x0B,
+	[0x0E] = IN_x0E,
+	[0x0F] = IN_x0F,
+	[0x10] = IN_x10,
+	[0x11] = IN_x11,
+	[0x12] = IN_x12,
+	[0x16] = IN_x16,
+	[0x18] = IN_x18,
+	[0x1A] = IN_x1A,
+	[0x1E] = IN_x1E,
+	[0x20] = IN_x20,
+	[0x21] = IN_x21,
+	[0x22] = IN_x22,
+	[0x23] = IN_x23,
+	[0x26] = IN_x26,
+	[0x28] = IN_x28,
+	[0x2A] = IN_x2A,
+	[0x2E] = IN_x2E,
+	[0x2F] = IN_x2F,
+	[0x31] = IN_x31,
+	[0x36] = IN_x36,
+	[0x3E] = IN_x3E,
+	[0x40] = IN_x40,
+	[0x41] = IN_x41,
+	[0x42] = IN_x42,
+	[0x43] = IN_x43,
+	[0x44] = IN_x44,
+	[0x45] = IN_x45,
+	[0x47] = IN_x47,
+	[0x48] = IN_x48,
+	[0x49] = IN_x49,
+	[0x4A] = IN_x4A,
+	[0x4B] = IN_x4B,
+	[0x4C] = IN_x4C,
+	[0x4D] = IN_x4D,
+	[0x4F] = IN_x4F,
+	[0x50] = IN_x50,
+	[0x51] = IN_x51,
+	[0x52] = IN_x52,
+	[0x53] = IN_x53,
+	[0x54] = IN_x54,
+	[0x55] = IN_x55,
+	[0x57] = IN_x57,
+	[0x58] = IN_x58,
+	[0x59] = IN_x59,
+	[0x5A] = IN_x5A,
+	[0x5B] = IN_x5B,
+	[0x5C] = IN_x5C,
+	[0x5D] = IN_x5D,
+	[0x5F] = IN_x5F,
+	[0x60] = IN_x60,
+	[0x61] = IN_x61,
+	[0x62] = IN_x62,
+	[0x63] = IN_x63,
+	[0x64] = IN_x64,
+	[0x65] = IN_x65,
+	[0x67] = IN_x67,
+	[0x68] = IN_x68,
+	[0x69] = IN_x69,
+	[0x6A] = IN_x6A,
+	[0x6B] = IN_x6B,
+	[0x6C] = IN_x6C,
+	[0x6D] = IN_x6D,
+	[0x6F] = IN_x6F,
+	[0x78] = IN_x78,
+	[0x79] = IN_x79,
+	[0x7A] = IN_x7A,
+	[0x7B] = IN_x7B,
+	[0x7C] = IN_x7C,
+	[0x7D] = IN_x7D,
+	[0x7F] = IN_x7F,
+	[0xAF] = IN_xAF,
+	[0xB1] = IN_xB1,
+	[0xC3] = IN_xC3,
+	[0xCD] = IN_xCD,
+	[0xE6] = IN_xE6,
+	[0xF0] = IN_xF0,
+	[0xF3] = IN_xF3,
+	[0xFB] = IN_xFB,
+	[0xFE] = IN_xFE,
+	[0xFF] = NULL,
+};
+
 void cpu_step() {
 	if (cpu.halted) {
 		// CPU is halted due to an interrupt
@@ -1135,6 +1709,17 @@ void cpu_step() {
 		// Fetch next instruction to execute and move forward program counter
 		uint16_t instr_PC = cpu.regs.PC;
 		cpu.opcode = bus_read(cpu.regs.PC++);
+		
+		static int unopt_counter = 0;
+		if (optimized_instrs[cpu.opcode]) {
+			emu_incr_cycles(1);
+			optimized_instrs[cpu.opcode]();
+			goto next_instr;
+		} else if (unopt_counter < 50) {
+			unopt_counter++;
+			sceClibPrintf("Slow instr: %x\n", cpu.opcode);
+		}
+		
 		cpu.instr = &instrs[cpu.opcode];
 		emu_incr_cycles(1);
 		
@@ -1168,7 +1753,7 @@ void cpu_step() {
 		// Executing the given instruction
 		cpu_exec_instr();
 	}
-	
+next_instr:
 	// Interrupts handling
 	if (cpu.master_interrupts) {
 		if (CPU_MASTER_INTR_SET(IT_VBLANK)) {
