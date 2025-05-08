@@ -401,24 +401,24 @@ void _AM_R_MR() {
 void _AM_R_HLI() {
 	cpu.fetched_data = bus_read(cpu_read_reg(cpu.instr->reg2));
 	emu_incr_cycles(1);
-	cpu_write_reg(RT_HL, cpu_read_reg(RT_HL) + 1);
+	cpu_write_reg(RT_HL, *(uint16_t *)&cpu.regs.L + 1);
 }
 void _AM_R_HLD() {
 	cpu.fetched_data = bus_read(cpu_read_reg(cpu.instr->reg2));
 	emu_incr_cycles(1);
-	cpu_write_reg(RT_HL, cpu_read_reg(RT_HL) - 1);
+	cpu_write_reg(RT_HL, *(uint16_t *)&cpu.regs.L - 1);
 }
 void _AM_HLI_R() {
 	cpu.fetched_data = cpu_read_reg(cpu.instr->reg2);
 	cpu.mem_dest = cpu_read_reg(cpu.instr->reg1);
 	cpu.use_mem_dest = 1;
-	cpu_write_reg(RT_HL, cpu_read_reg(RT_HL) + 1);
+	cpu_write_reg(RT_HL, *(uint16_t *)&cpu.regs.L + 1);
 }
 void _AM_HLD_R() {
 	cpu.fetched_data = cpu_read_reg(cpu.instr->reg2);
 	cpu.mem_dest = cpu_read_reg(cpu.instr->reg1);
 	cpu.use_mem_dest = 1;
-	cpu_write_reg(RT_HL, cpu_read_reg(RT_HL) - 1);
+	cpu_write_reg(RT_HL, *(uint16_t *)&cpu.regs.L - 1);
 }
 void _AM_A8_R() {
 	cpu.mem_dest = bus_read(cpu.regs.PC) | 0xFF00;
@@ -729,7 +729,7 @@ void _IN_CB() {
 	uint8_t bit = (val >> 3) & 0x07;
 	uint16_t hl; 
 	if (reg == RT_HL) {
-		hl = cpu_read_reg(RT_HL);
+		hl = *(uint16_t *)&cpu.regs.L;
 		rval = bus_read(hl);
 		emu_incr_cycles(3);
 	} else {
