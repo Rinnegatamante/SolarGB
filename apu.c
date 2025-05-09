@@ -20,12 +20,13 @@ static volatile int16_t audio_buffers[2][AUDIO_SAMPLES_NUM];
 static uint8_t audio_pull = 0;
 static uint8_t audio_push = 0;
 static uint16_t samples_num = 0;
-static SceUID audio_mutex;
+static SceUID audio_mutex = 0;
 
 int audio_thread(unsigned int argc, void *argv) {
 	int ch = sceAudioOutOpenPort(SCE_AUDIO_OUT_PORT_TYPE_BGM, AUDIO_SAMPLES_NUM, 44100, SCE_AUDIO_OUT_MODE_MONO);
-	
-	while (emu.state != EMU_NOT_RUNNING) {
+	sceClibPrintf("ch %x\n", ch);
+
+	for (;;) {
 		if (emu.state == EMU_PAUSED) {
 			sceKernelDelayThread(100);
 		} else {
@@ -34,16 +35,16 @@ int audio_thread(unsigned int argc, void *argv) {
 			audio_pull = (audio_pull + 1) % 2;
 		}
 	}
-	
-	sceAudioOutReleasePort(ch);
-	sceKernelDeleteSema(audio_mutex);
+
 	return sceKernelExitDeleteThread(0);
 }
 
 void apu_init() {
-	audio_mutex = sceKernelCreateSema("Audio Mutex", 0, 0, 1, NULL);
-	SceUID audio_thid = sceKernelCreateThread("Audio Thread", audio_thread, 0x40, 0x100000, 0, 0, NULL);
-	sceKernelStartThread(audio_thid, 0, NULL);
+	if (!audio_mutex) {
+		audio_mutex = sceKernelCreateSema("Audio Mutex", 0, 0, 1, NULL);
+		SceUID audio_thid = sceKernelCreateThread("Audio Thread", audio_thread, 0x40, 0x100000, 0, 0, NULL);
+		sceKernelStartThread(audio_thid, 0, NULL);
+	}
 	
 	apu.active = 0;
 	apu.sequencer_counter = 8192;
