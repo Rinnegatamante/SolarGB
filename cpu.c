@@ -1123,6 +1123,1036 @@ func_t instr_log_funcs[] = {
 };
 #define cpu_stringify_instr() instr_log_funcs[cpu.instr->addr_mode]()
 
+void IN_xCB00() {
+	emu_incr_cycles(1);
+	uint8_t set = 0;
+	uint8_t rval = cpu.regs.B;
+	uint8_t res = rval << 1;
+	if ((rval & 0x80) == 0x80) {
+		res |= 1;
+		set = 1;
+	}
+	cpu.regs.B = res;
+	CPU_SET_FLAG(FLAG_Z, res == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, set);
+}
+
+void IN_xCB01() {
+	emu_incr_cycles(1);
+	uint8_t set = 0;
+	uint8_t rval = cpu.regs.C;
+	uint8_t res = rval << 1;
+	if ((rval & 0x80) == 0x80) {
+		res |= 1;
+		set = 1;
+	}
+	cpu.regs.C = res;
+	CPU_SET_FLAG(FLAG_Z, res == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, set);
+}
+
+void IN_xCB02() {
+	emu_incr_cycles(1);
+	uint8_t set = 0;
+	uint8_t rval = cpu.regs.D;
+	uint8_t res = rval << 1;
+	if ((rval & 0x80) == 0x80) {
+		res |= 1;
+		set = 1;
+	}
+	cpu.regs.D = res;
+	CPU_SET_FLAG(FLAG_Z, res == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, set);
+}
+
+void IN_xCB03() {
+	emu_incr_cycles(1);
+	uint8_t set = 0;
+	uint8_t rval = cpu.regs.E;
+	uint8_t res = rval << 1;
+	if ((rval & 0x80) == 0x80) {
+		res |= 1;
+		set = 1;
+	}
+	cpu.regs.E = res;
+	CPU_SET_FLAG(FLAG_Z, res == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, set);
+}
+
+void IN_xCB04() {
+	emu_incr_cycles(1);
+	uint8_t set = 0;
+	uint8_t rval = cpu.regs.H;
+	uint8_t res = rval << 1;
+	if ((rval & 0x80) == 0x80) {
+		res |= 1;
+		set = 1;
+	}
+	cpu.regs.H = res;
+	CPU_SET_FLAG(FLAG_Z, res == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, set);
+}
+
+void IN_xCB05() {
+	emu_incr_cycles(1);
+	uint8_t set = 0;
+	uint8_t rval = cpu.regs.L;
+	uint8_t res = rval << 1;
+	if ((rval & 0x80) == 0x80) {
+		res |= 1;
+		set = 1;
+	}
+	cpu.regs.L = res;
+	CPU_SET_FLAG(FLAG_Z, res == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, set);
+}
+
+void IN_xCB06() {
+	emu_incr_cycles(3);
+	uint8_t set = 0;
+	uint8_t rval = bus_read(*(uint16_t *)&cpu.regs.L);
+	uint8_t res = rval << 1;
+	if ((rval & 0x80) == 0x80) {
+		res |= 1;
+		set = 1;
+	}
+	bus_write(*(uint16_t *)&cpu.regs.L, res);
+	CPU_SET_FLAG(FLAG_Z, res == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, set);
+}
+
+void IN_xCB07() {
+	emu_incr_cycles(1);
+	uint8_t set = 0;
+	uint8_t rval = cpu.regs.A;
+	uint8_t res = rval << 1;
+	if ((rval & 0x80) == 0x80) {
+		res |= 1;
+		set = 1;
+	}
+	cpu.regs.A = res;
+	CPU_SET_FLAG(FLAG_Z, res == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, set);
+}
+
+void IN_xCB08() {
+	emu_incr_cycles(1);
+	uint8_t res = cpu.regs.B;
+	uint8_t rval = (res >> 1) | (res << 7);
+	cpu.regs.B = rval;
+	CPU_SET_FLAG(FLAG_Z, rval == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, res & 1);
+}
+
+void IN_xCB09() {
+	emu_incr_cycles(1);
+	uint8_t res = cpu.regs.C;
+	uint8_t rval = (res >> 1) | (res << 7);
+	cpu.regs.C = rval;
+	CPU_SET_FLAG(FLAG_Z, rval == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, res & 1);
+}
+
+void IN_xCB0A() {
+	emu_incr_cycles(1);
+	uint8_t res = cpu.regs.D;
+	uint8_t rval = (res >> 1) | (res << 7);
+	cpu.regs.D = rval;
+	CPU_SET_FLAG(FLAG_Z, rval == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, res & 1);
+}
+
+void IN_xCB0B() {
+	emu_incr_cycles(1);
+	uint8_t res = cpu.regs.E;
+	uint8_t rval = (res >> 1) | (res << 7);
+	cpu.regs.E = rval;
+	CPU_SET_FLAG(FLAG_Z, rval == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, res & 1);
+}
+
+void IN_xCB0C() {
+	emu_incr_cycles(1);
+	uint8_t res = cpu.regs.H;
+	uint8_t rval = (res >> 1) | (res << 7);
+	cpu.regs.H = rval;
+	CPU_SET_FLAG(FLAG_Z, rval == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, res & 1);
+}
+
+void IN_xCB0D() {
+	emu_incr_cycles(1);
+	uint8_t res = cpu.regs.L;
+	uint8_t rval = (res >> 1) | (res << 7);
+	cpu.regs.L = rval;
+	CPU_SET_FLAG(FLAG_Z, rval == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, res & 1);
+}
+
+void IN_xCB0E() {
+	emu_incr_cycles(3);
+	uint8_t res = bus_read(*(uint16_t *)&cpu.regs.L);
+	uint8_t rval = (res >> 1) | (res << 7);
+	bus_write(*(uint16_t *)&cpu.regs.L, rval);
+	CPU_SET_FLAG(FLAG_Z, rval == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, res & 1);
+}
+
+void IN_xCB0F() {
+	emu_incr_cycles(1);
+	uint8_t res = cpu.regs.A;
+	uint8_t rval = (res >> 1) | (res << 7);
+	cpu.regs.A = rval;
+	CPU_SET_FLAG(FLAG_Z, rval == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, res & 1);
+}
+
+void IN_xCB10() {
+	emu_incr_cycles(1);
+	uint8_t res = cpu.regs.B;
+	uint8_t rval = (res << 1) | CPU_FLAG_C_SET;
+	cpu.regs.B = rval;
+	CPU_SET_FLAG(FLAG_Z, !rval);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, (res & 0x80) == 0x80);
+}
+
+void IN_xCB11() {
+	emu_incr_cycles(1);
+	uint8_t res = cpu.regs.C;
+	uint8_t rval = (res << 1) | CPU_FLAG_C_SET;
+	cpu.regs.C = rval;
+	CPU_SET_FLAG(FLAG_Z, !rval);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, (res & 0x80) == 0x80);
+}
+
+void IN_xCB12() {
+	emu_incr_cycles(1);
+	uint8_t res = cpu.regs.D;
+	uint8_t rval = (res << 1) | CPU_FLAG_C_SET;
+	cpu.regs.D = rval;
+	CPU_SET_FLAG(FLAG_Z, !rval);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, (res & 0x80) == 0x80);
+}
+
+void IN_xCB13() {
+	emu_incr_cycles(1);
+	uint8_t res = cpu.regs.E;
+	uint8_t rval = (res << 1) | CPU_FLAG_C_SET;
+	cpu.regs.E = rval;
+	CPU_SET_FLAG(FLAG_Z, !rval);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, (res & 0x80) == 0x80);
+}
+
+void IN_xCB14() {
+	emu_incr_cycles(1);
+	uint8_t res = cpu.regs.H;
+	uint8_t rval = (res << 1) | CPU_FLAG_C_SET;
+	cpu.regs.H = rval;
+	CPU_SET_FLAG(FLAG_Z, !rval);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, (res & 0x80) == 0x80);
+}
+
+void IN_xCB15() {
+	emu_incr_cycles(1);
+	uint8_t res = cpu.regs.L;
+	uint8_t rval = (res << 1) | CPU_FLAG_C_SET;
+	cpu.regs.L = rval;
+	CPU_SET_FLAG(FLAG_Z, !rval);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, (res & 0x80) == 0x80);
+}
+
+void IN_xCB16() {
+	emu_incr_cycles(3);
+	uint8_t res = bus_read(*(uint16_t *)&cpu.regs.L);
+	uint8_t rval = (res << 1) | CPU_FLAG_C_SET;
+	bus_write(*(uint16_t *)&cpu.regs.L, rval);
+	CPU_SET_FLAG(FLAG_Z, !rval);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, (res & 0x80) == 0x80);
+}
+
+void IN_xCB17() {
+	emu_incr_cycles(1);
+	uint8_t res = cpu.regs.A;
+	uint8_t rval = (res << 1) | CPU_FLAG_C_SET;
+	cpu.regs.A = rval;
+	CPU_SET_FLAG(FLAG_Z, !rval);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, (res & 0x80) == 0x80);
+}
+
+void IN_xCB18() {
+	emu_incr_cycles(1);
+	uint8_t res = cpu.regs.B;
+	uint8_t rval = (res >> 1) | (CPU_FLAG_C_SET << 7);
+	cpu.regs.B = rval;
+	CPU_SET_FLAG(FLAG_Z, rval == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, res & 1);
+}
+
+void IN_xCB19() {
+	emu_incr_cycles(1);
+	uint8_t res = cpu.regs.C;
+	uint8_t rval = (res >> 1) | (CPU_FLAG_C_SET << 7);
+	cpu.regs.C = rval;
+	CPU_SET_FLAG(FLAG_Z, rval == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, res & 1);
+}
+
+void IN_xCB1A() {
+	emu_incr_cycles(1);
+	uint8_t res = cpu.regs.D;
+	uint8_t rval = (res >> 1) | (CPU_FLAG_C_SET << 7);
+	cpu.regs.D = rval;
+	CPU_SET_FLAG(FLAG_Z, rval == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, res & 1);
+}
+
+void IN_xCB1B() {
+	emu_incr_cycles(1);
+	uint8_t res = cpu.regs.E;
+	uint8_t rval = (res >> 1) | (CPU_FLAG_C_SET << 7);
+	cpu.regs.E = rval;
+	CPU_SET_FLAG(FLAG_Z, rval == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, res & 1);
+}
+
+void IN_xCB1C() {
+	emu_incr_cycles(1);
+	uint8_t res = cpu.regs.H;
+	uint8_t rval = (res >> 1) | (CPU_FLAG_C_SET << 7);
+	cpu.regs.H = rval;
+	CPU_SET_FLAG(FLAG_Z, rval == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, res & 1);
+}
+
+void IN_xCB1D() {
+	emu_incr_cycles(1);
+	uint8_t res = cpu.regs.L;
+	uint8_t rval = (res >> 1) | (CPU_FLAG_C_SET << 7);
+	cpu.regs.L = rval;
+	CPU_SET_FLAG(FLAG_Z, rval == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, res & 1);
+}
+
+void IN_xCB1E() {
+	emu_incr_cycles(3);
+	uint8_t res = bus_read(*(uint16_t *)&cpu.regs.L);
+	uint8_t rval = (res >> 1) | (CPU_FLAG_C_SET << 7);
+	bus_write(*(uint16_t *)&cpu.regs.L, rval);
+	CPU_SET_FLAG(FLAG_Z, rval == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, res & 1);
+}
+
+void IN_xCB1F() {
+	emu_incr_cycles(1);
+	uint8_t res = cpu.regs.A;
+	uint8_t rval = (res >> 1) | (CPU_FLAG_C_SET << 7);
+	cpu.regs.A = rval;
+	CPU_SET_FLAG(FLAG_Z, rval == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, res & 1);
+}
+
+void IN_xCB30() {
+	emu_incr_cycles(1);
+	cpu.regs.B = ((cpu.regs.B & 0xF0) >> 4) | ((cpu.regs.B & 0x0F) << 4);
+	CPU_SET_FLAG(FLAG_Z, cpu.regs.B == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, 0);
+}
+
+void IN_xCB31() {
+	emu_incr_cycles(1);
+	cpu.regs.C = ((cpu.regs.C & 0xF0) >> 4) | ((cpu.regs.C & 0x0F) << 4);
+	CPU_SET_FLAG(FLAG_Z, cpu.regs.C == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, 0);
+}
+
+void IN_xCB32() {
+	emu_incr_cycles(1);
+	cpu.regs.D = ((cpu.regs.D & 0xF0) >> 4) | ((cpu.regs.D & 0x0F) << 4);
+	CPU_SET_FLAG(FLAG_Z, cpu.regs.D == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, 0);
+}
+
+void IN_xCB33() {
+	emu_incr_cycles(1);
+	cpu.regs.E = ((cpu.regs.E & 0xF0) >> 4) | ((cpu.regs.E & 0x0F) << 4);
+	CPU_SET_FLAG(FLAG_Z, cpu.regs.E == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, 0);
+}
+
+void IN_xCB34() {
+	emu_incr_cycles(1);
+	cpu.regs.H = ((cpu.regs.H & 0xF0) >> 4) | ((cpu.regs.H & 0x0F) << 4);
+	CPU_SET_FLAG(FLAG_Z, cpu.regs.H == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, 0);
+}
+
+void IN_xCB35() {
+	emu_incr_cycles(1);
+	cpu.regs.L = ((cpu.regs.L & 0xF0) >> 4) | ((cpu.regs.L & 0x0F) << 4);
+	CPU_SET_FLAG(FLAG_Z, cpu.regs.L == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, 0);
+}
+
+void IN_xCB36() {
+	emu_incr_cycles(3);
+	uint8_t rval = bus_read(*(uint16_t *)&cpu.regs.L);
+	rval = ((rval & 0xF0) >> 4) | ((rval & 0x0F) << 4);
+	bus_write(*(uint16_t *)&cpu.regs.L, rval);
+	CPU_SET_FLAG(FLAG_Z, rval == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, 0);
+}
+
+void IN_xCB37() {
+	emu_incr_cycles(1);
+	cpu.regs.A = ((cpu.regs.A & 0xF0) >> 4) | ((cpu.regs.A & 0x0F) << 4);
+	CPU_SET_FLAG(FLAG_Z, cpu.regs.A == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, 0);
+}
+
+void IN_xCB40() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.B & 0x01) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB41() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.C & 0x01) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB42() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.D & 0x01) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB43() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.E & 0x01) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB44() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.H & 0x01) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB45() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.L & 0x01) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB46() {
+	emu_incr_cycles(3);
+	uint8_t rval = bus_read(*(uint16_t *)&cpu.regs.L);
+	CPU_SET_FLAG(FLAG_Z, (rval & 0x01) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB47() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.A & 0x01) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB48() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.B & 0x02) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB49() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.C & 0x02) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB4A() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.D & 0x02) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB4B() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.E & 0x02) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB4C() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.H & 0x02) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB4D() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.L & 0x02) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB4E() {
+	emu_incr_cycles(3);
+	uint8_t rval = bus_read(*(uint16_t *)&cpu.regs.L);
+	CPU_SET_FLAG(FLAG_Z, (rval & 0x02) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB4F() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.A & 0x02) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB50() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.B & 0x04) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB51() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.C & 0x04) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB52() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.D & 0x04) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB53() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.E & 0x04) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB54() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.H & 0x04) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB55() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.L & 0x04) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB56() {
+	emu_incr_cycles(3);
+	uint8_t rval = bus_read(*(uint16_t *)&cpu.regs.L);
+	CPU_SET_FLAG(FLAG_Z, (rval & 0x04) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB57() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.A & 0x04) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB58() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.B & 0x08) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB59() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.C & 0x08) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB5A() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.D & 0x08) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB5B() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.E & 0x08) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB5C() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.H & 0x08) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB5D() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.L & 0x08) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB5E() {
+	emu_incr_cycles(3);
+	uint8_t rval = bus_read(*(uint16_t *)&cpu.regs.L);
+	CPU_SET_FLAG(FLAG_Z, (rval & 0x08) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB5F() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.A & 0x08) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB60() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.B & 0x10) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB61() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.C & 0x10) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB62() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.D & 0x10) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB63() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.E & 0x10) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB64() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.H & 0x10) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB65() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.L & 0x10) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB66() {
+	emu_incr_cycles(3);
+	uint8_t rval = bus_read(*(uint16_t *)&cpu.regs.L);
+	CPU_SET_FLAG(FLAG_Z, (rval & 0x10) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB67() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.A & 0x10) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB68() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.B & 0x20) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB69() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.C & 0x20) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB6A() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.D & 0x20) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB6B() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.E & 0x20) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB6C() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.H & 0x20) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB6D() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.L & 0x20) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB6E() {
+	emu_incr_cycles(3);
+	uint8_t rval = bus_read(*(uint16_t *)&cpu.regs.L);
+	CPU_SET_FLAG(FLAG_Z, (rval & 0x20) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB6F() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.A & 0x20) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB70() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.B & 0x40) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB71() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.C & 0x40) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB72() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.D & 0x40) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB73() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.E & 0x40) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB74() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.H & 0x40) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB75() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.L & 0x40) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB76() {
+	emu_incr_cycles(3);
+	uint8_t rval = bus_read(*(uint16_t *)&cpu.regs.L);
+	CPU_SET_FLAG(FLAG_Z, (rval & 0x40) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB77() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.A & 0x40) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB78() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.B & 0x80) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB79() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.C & 0x80) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB7A() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.D & 0x80) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB7B() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.E & 0x80) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB7C() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.H & 0x80) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB7D() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.L & 0x80) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB7E() {
+	emu_incr_cycles(3);
+	uint8_t rval = bus_read(*(uint16_t *)&cpu.regs.L);
+	CPU_SET_FLAG(FLAG_Z, (rval & 0x80) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+void IN_xCB7F() {
+	emu_incr_cycles(1);
+	CPU_SET_FLAG(FLAG_Z, (cpu.regs.A & 0x80) == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 1);
+}
+
+func_t optimized_cb_instrs[] = {
+	[0x00] = IN_xCB00,
+	[0x01] = IN_xCB01,
+	[0x02] = IN_xCB02,
+	[0x03] = IN_xCB03,
+	[0x04] = IN_xCB04,
+	[0x05] = IN_xCB05,
+	[0x06] = IN_xCB06,
+	[0x07] = IN_xCB07,
+	[0x08] = IN_xCB08,
+	[0x09] = IN_xCB09,
+	[0x0A] = IN_xCB0A,
+	[0x0B] = IN_xCB0B,
+	[0x0C] = IN_xCB0C,
+	[0x0D] = IN_xCB0D,
+	[0x0E] = IN_xCB0E,
+	[0x0F] = IN_xCB0F,
+	[0x10] = IN_xCB10,
+	[0x11] = IN_xCB11,
+	[0x12] = IN_xCB12,
+	[0x13] = IN_xCB13,
+	[0x14] = IN_xCB14,
+	[0x15] = IN_xCB15,
+	[0x16] = IN_xCB16,
+	[0x17] = IN_xCB17,
+	[0x18] = IN_xCB18,
+	[0x19] = IN_xCB19,
+	[0x1A] = IN_xCB1A,
+	[0x1B] = IN_xCB1B,
+	[0x1C] = IN_xCB1C,
+	[0x1D] = IN_xCB1D,
+	[0x1E] = IN_xCB1E,
+	[0x1F] = IN_xCB1F,
+	[0x30] = IN_xCB30,
+	[0x31] = IN_xCB31,
+	[0x32] = IN_xCB32,
+	[0x33] = IN_xCB33,
+	[0x34] = IN_xCB34,
+	[0x35] = IN_xCB35,
+	[0x36] = IN_xCB36,
+	[0x37] = IN_xCB37,
+	[0x40] = IN_xCB40,
+	[0x41] = IN_xCB41,
+	[0x42] = IN_xCB42,
+	[0x43] = IN_xCB43,
+	[0x44] = IN_xCB44,
+	[0x45] = IN_xCB45,
+	[0x46] = IN_xCB46,
+	[0x47] = IN_xCB47,
+	[0x48] = IN_xCB48,
+	[0x49] = IN_xCB49,
+	[0x4A] = IN_xCB4A,
+	[0x4B] = IN_xCB4B,
+	[0x4C] = IN_xCB4C,
+	[0x4D] = IN_xCB4D,
+	[0x4E] = IN_xCB4E,
+	[0x4F] = IN_xCB4F,
+	[0x50] = IN_xCB50,
+	[0x51] = IN_xCB51,
+	[0x52] = IN_xCB52,
+	[0x53] = IN_xCB53,
+	[0x54] = IN_xCB54,
+	[0x55] = IN_xCB55,
+	[0x56] = IN_xCB56,
+	[0x57] = IN_xCB57,
+	[0x58] = IN_xCB58,
+	[0x59] = IN_xCB59,
+	[0x5A] = IN_xCB5A,
+	[0x5B] = IN_xCB5B,
+	[0x5C] = IN_xCB5C,
+	[0x5D] = IN_xCB5D,
+	[0x5E] = IN_xCB5E,
+	[0x5F] = IN_xCB5F,
+	[0x60] = IN_xCB60,
+	[0x61] = IN_xCB61,
+	[0x62] = IN_xCB62,
+	[0x63] = IN_xCB63,
+	[0x64] = IN_xCB64,
+	[0x65] = IN_xCB65,
+	[0x66] = IN_xCB66,
+	[0x67] = IN_xCB67,
+	[0x68] = IN_xCB68,
+	[0x69] = IN_xCB69,
+	[0x6A] = IN_xCB6A,
+	[0x6B] = IN_xCB6B,
+	[0x6C] = IN_xCB6C,
+	[0x6D] = IN_xCB6D,
+	[0x6E] = IN_xCB6E,
+	[0x6F] = IN_xCB6F,
+	[0x70] = IN_xCB70,
+	[0x71] = IN_xCB71,
+	[0x72] = IN_xCB72,
+	[0x73] = IN_xCB73,
+	[0x74] = IN_xCB74,
+	[0x75] = IN_xCB75,
+	[0x76] = IN_xCB76,
+	[0x77] = IN_xCB77,
+	[0x78] = IN_xCB78,
+	[0x79] = IN_xCB79,
+	[0x7A] = IN_xCB7A,
+	[0x7B] = IN_xCB7B,
+	[0x7C] = IN_xCB7C,
+	[0x7D] = IN_xCB7D,
+	[0x7E] = IN_xCB7E,
+	[0x7F] = IN_xCB7F,
+	[0xFF] = NULL,
+};
+
 void IN_x00() {
 }
 
@@ -2173,6 +3203,23 @@ void IN_xCA() {
 	}
 }
 
+void IN_xCB() {
+	emu_incr_cycles(1);
+	uint8_t opcode = bus_read(cpu.regs.PC);
+	if (optimized_cb_instrs[opcode]) {
+		cpu.regs.PC++;
+		optimized_cb_instrs[opcode]();
+	} else {
+		sceClibPrintf("slow cb instr: %x\n", opcode);
+		cpu.instr = &instrs[cpu.opcode];
+		cpu.mem_dest = 0;
+		cpu.use_mem_dest = 0;
+		cpu_fetch_data();
+		
+		_IN_CB();
+	}
+}
+
 void IN_xCC() {
 	if ((cpu.regs.F & FLAG_Z) == FLAG_Z) {
 		uint16_t low = bus_read(cpu.regs.PC);
@@ -2644,7 +3691,7 @@ func_t optimized_instrs[] = {
 	[0xC8] = IN_xC8,
 	[0xC9] = IN_xC9,
 	[0xCA] = IN_xCA,
-	//[0xCB] = IN_xCB,
+	[0xCB] = IN_xCB,
 	[0xCC] = IN_xCC,
 	[0xCD] = IN_xCD,
 	[0xCE] = IN_xCE,
