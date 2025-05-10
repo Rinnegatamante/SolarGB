@@ -1141,6 +1141,18 @@ void IN_x02() {
 	emu_incr_cycles(1);
 }
 
+void IN_x03() {
+	emu_incr_cycles(1);
+	*(uint16_t*)&cpu.regs.C = *(uint16_t*)&cpu.regs.C + 1;
+}
+
+void IN_x04() {
+	cpu.regs.B++;
+	CPU_SET_FLAG(FLAG_Z, cpu.regs.B == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, (cpu.regs.B & 0x0F) == 0);
+}
+
 void IN_x05() {
 	cpu.regs.B--;
 	CPU_SET_FLAG(FLAG_Z, cpu.regs.B == 0);
@@ -1245,6 +1257,13 @@ void IN_x13() {
 	*(uint16_t *)&cpu.regs.E = *(uint16_t *)&cpu.regs.E + 1;
 }
 
+void IN_x14() {
+	cpu.regs.D++;
+	CPU_SET_FLAG(FLAG_Z, cpu.regs.D == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, (cpu.regs.D & 0x0F) == 0);
+}
+
 void IN_x15() {
 	cpu.regs.D--;
 	CPU_SET_FLAG(FLAG_Z, cpu.regs.D == 0);
@@ -1257,6 +1276,15 @@ void IN_x16() {
 	emu_incr_cycles(1);
 	cpu.regs.PC++;
 	cpu.regs.D = fetched_data;
+}
+
+void IN_x17() {
+	uint8_t val = (cpu.regs.A >> 7) & 1;
+	cpu.regs.A = CPU_FLAG_C_SET | (cpu.regs.A << 1);
+	CPU_SET_FLAG(FLAG_Z, 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, val);
 }
 
 void IN_x18() {
@@ -1285,6 +1313,18 @@ void IN_x1A() {
 	cpu.regs.A = fetched_data;
 }
 
+void IN_x1B() {
+	emu_incr_cycles(1);
+	*(uint16_t *)&cpu.regs.E = *(uint16_t *)&cpu.regs.E - 1;
+}	
+
+void IN_x1C() {
+	cpu.regs.E++;
+	CPU_SET_FLAG(FLAG_Z, cpu.regs.E == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, (cpu.regs.E & 0x0F) == 0);
+}
+
 void IN_x1D() {
 	cpu.regs.E--;
 	CPU_SET_FLAG(FLAG_Z, cpu.regs.E == 0);
@@ -1297,6 +1337,15 @@ void IN_x1E() {
 	emu_incr_cycles(1);
 	cpu.regs.PC++;
 	cpu.regs.E = fetched_data;
+}
+
+void IN_x1F() {
+	uint8_t val = cpu.regs.A & 1;
+	cpu.regs.A = (CPU_FLAG_C_SET << 7) | (cpu.regs.A >> 1);
+	CPU_SET_FLAG(FLAG_Z, 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, val);
 }
 
 void IN_x20() {
@@ -1328,6 +1377,20 @@ void IN_x22() {
 	emu_incr_cycles(1);
 }
 
+void IN_x24() {
+	cpu.regs.H++;
+	CPU_SET_FLAG(FLAG_Z, cpu.regs.H == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, (cpu.regs.H & 0x0F) == 0);
+}
+
+void IN_x25() {
+	cpu.regs.H--;
+	CPU_SET_FLAG(FLAG_Z, cpu.regs.H == 0);
+	CPU_SET_FLAG(FLAG_N, 1);
+	CPU_SET_FLAG(FLAG_H, (cpu.regs.H & 0x0F) == 0x0F);
+}
+
 void IN_x23() {
 	emu_incr_cycles(1);
 	*(uint16_t *)&cpu.regs.L = *(uint16_t *)&cpu.regs.L + 1;
@@ -1338,6 +1401,22 @@ void IN_x26() {
 	emu_incr_cycles(1);
 	cpu.regs.PC++;
 	cpu.regs.H = fetched_data;
+}
+
+void IN_x27() {
+	uint8_t val = 0;
+	int val2 = 0;
+	if (CPU_FLAG_H_SET || (((cpu.regs.A & 0x0F) > 9) && !CPU_FLAG_N_SET)) {
+		val = 6;
+	}
+	if (CPU_FLAG_C_SET || ((cpu.regs.A > 0x99) && !CPU_FLAG_N_SET)) {
+		val |= 0x60;
+		val2 = 1;
+	}
+	cpu.regs.A += CPU_FLAG_N_SET ? -val : val;
+	CPU_SET_FLAG(FLAG_Z, cpu.regs.A == 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, val2);
 }
 
 void IN_x28() {
@@ -1351,11 +1430,33 @@ void IN_x28() {
 	}
 }
 
+void IN_x29() {
+	uint16_t fetched_data = *(uint16_t *)&cpu.regs.L;
+	emu_incr_cycles(1);
+	uint32_t reg = *(uint16_t *)&cpu.regs.L;
+	uint32_t val = reg + fetched_data;
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, ((reg & 0x0FFF) + (fetched_data & 0x0FFF)) >= 0x1000 ? 1 : 0);
+	CPU_SET_FLAG(FLAG_C, val >= 0x10000 ? 1 : 0);
+	*(uint16_t *)&cpu.regs.L; = val & 0xFFFF;
+}
+
 void IN_x2A() {
 	uint8_t fetched_data = bus_read(*(uint16_t *)&cpu.regs.L);
 	emu_incr_cycles(1);
 	*(uint16_t *)&cpu.regs.L = *(uint16_t *)&cpu.regs.L + 1;
 	cpu.regs.A = fetched_data;
+}
+
+void IN_x2B() {
+	*(uint16_t *)&cpu.regs.L = *(uint16_t *)&cpu.regs.L - 1;
+}
+
+void IN_x2C() {
+	cpu.regs.L++;
+	CPU_SET_FLAG(FLAG_Z, cpu.regs.L == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, (cpu.regs.L & 0x0F) == 0);
 }
 
 void IN_x2E() {
@@ -1800,6 +1901,13 @@ void IN_xC5() {
 	emu_incr_cycles(1);
 }
 
+void IN_xC7() {
+	emu_incr_cycles(2);
+	stack_push16(cpu.regs.PC);
+	cpu.regs.PC = 0x00;
+	emu_incr_cycles(1);
+}
+
 void IN_xC8() {
 	emu_incr_cycles(1);
 	if ((cpu.regs.F & FLAG_Z) == FLAG_Z) {
@@ -1848,6 +1956,13 @@ void IN_xCD() {
 	emu_incr_cycles(1);
 }
 
+void IN_xCF() {
+	emu_incr_cycles(2);
+	stack_push16(cpu.regs.PC);
+	cpu.regs.PC = 0x08;
+	emu_incr_cycles(1);
+}
+
 void IN_xD1() {
 	uint16_t low = stack_pop();
 	emu_incr_cycles(1);
@@ -1863,6 +1978,20 @@ void IN_xD5() {
 	stack_push((val >> 8) & 0xFF);
 	emu_incr_cycles(1);
 	stack_push(val & 0xFF);
+	emu_incr_cycles(1);
+}
+
+void IN_xD7() {
+	emu_incr_cycles(2);
+	stack_push16(cpu.regs.PC);
+	cpu.regs.PC = 0x10;
+	emu_incr_cycles(1);
+}
+
+void IN_xDF() {
+	emu_incr_cycles(2);
+	stack_push16(cpu.regs.PC);
+	cpu.regs.PC = 0x18;
 	emu_incr_cycles(1);
 }
 
@@ -1909,6 +2038,13 @@ void IN_xE6() {
 	CPU_SET_FLAG(FLAG_C, 0);
 }
 
+void IN_xE7() {
+	emu_incr_cycles(2);
+	stack_push16(cpu.regs.PC);
+	cpu.regs.PC = 0x20;
+	emu_incr_cycles(1);
+}
+
 void IN_xEA() {
 	uint16_t low = bus_read(cpu.regs.PC);
 	emu_incr_cycles(1);
@@ -1917,6 +2053,13 @@ void IN_xEA() {
 	uint16_t mem_dest = low | (high << 8);
 	cpu.regs.PC += 2;
 	bus_write(mem_dest, cpu.regs.A);
+	emu_incr_cycles(1);
+}
+
+void IN_xEF() {
+	emu_incr_cycles(2);
+	stack_push16(cpu.regs.PC);
+	cpu.regs.PC = 0x28;
 	emu_incr_cycles(1);
 }
 
@@ -1950,6 +2093,13 @@ void IN_xF5() {
 	emu_incr_cycles(1);
 }
 
+void IN_xF7() {
+	emu_incr_cycles(2);
+	stack_push16(cpu.regs.PC);
+	cpu.regs.PC = 0x30;
+	emu_incr_cycles(1);
+}
+
 void IN_xFA() {
 	uint16_t low = bus_read(cpu.regs.PC);
 	emu_incr_cycles(2);
@@ -1976,10 +2126,19 @@ void IN_xFE() {
 	CPU_SET_FLAG(FLAG_C, val < 0);
 }
 
+void IN_xFF() {
+	emu_incr_cycles(2);
+	stack_push16(cpu.regs.PC);
+	cpu.regs.PC = 0x38;
+	emu_incr_cycles(1);
+}
+
 func_t optimized_instrs[] = {
 	[0x00] = IN_x00,
 	[0x01] = IN_x01,
 	[0x02] = IN_x02,
+	[0x03] = IN_x03,
+	[0x04] = IN_x04,
 	[0x05] = IN_x05,
 	[0x06] = IN_x06,
 	[0x07] = IN_x07,
@@ -1994,27 +2153,50 @@ func_t optimized_instrs[] = {
 	[0x11] = IN_x11,
 	[0x12] = IN_x12,
 	[0x13] = IN_x13,
+	[0x14] = IN_x14,
 	[0x15] = IN_x15,
 	[0x16] = IN_x16,
+	[0x17] = IN_x17,
 	[0x18] = IN_x18,
 	[0x19] = IN_x19,
 	[0x1A] = IN_x1A,
+	[0x1B] = IN_x1B,
+	[0x1C] = IN_x1C,
 	[0x1D] = IN_x1D,
 	[0x1E] = IN_x1E,
+	[0x1F] = IN_x1F,
 	[0x20] = IN_x20,
 	[0x21] = IN_x21,
 	[0x22] = IN_x22,
 	[0x23] = IN_x23,
+	[0x24] = IN_x24,
+	[0x25] = IN_x25,
 	[0x26] = IN_x26,
+	[0x27] = IN_x27,
 	[0x28] = IN_x28,
+	[0x29] = IN_x29,
 	[0x2A] = IN_x2A,
+	[0x2B] = IN_x2B,
+	[0x2C] = IN_x2C,
+	//[0x2D] = IN_x2D,
 	[0x2E] = IN_x2E,
 	[0x2F] = IN_x2F,
 	[0x30] = IN_x30,
 	[0x31] = IN_x31,
+	//[0x32] = IN_x32,
+	//[0x33] = IN_x33,
+	//[0x34] = IN_x34,
+	//[0x35] = IN_x35,
 	[0x36] = IN_x36,
+	//[0x37] = IN_x37,
+	//[0x38] = IN_x38,
+	//[0x39] = IN_x39,
+	//[0x3A] = IN_x3A,
+	//[0x3B] = IN_x3B,
+	//[0x3C] = IN_x3C,
 	[0x3D] = IN_x3D,
 	[0x3E] = IN_x3E,
+	//[0x3F] = IN_x3F,
 	[0x40] = IN_x40,
 	[0x41] = IN_x41,
 	[0x42] = IN_x42,
@@ -2063,7 +2245,12 @@ func_t optimized_instrs[] = {
 	[0x6D] = IN_x6D,
 	[0x6E] = IN_x6E,
 	[0x6F] = IN_x6F,
+	//[0x70] = IN_x70,
 	[0x71] = IN_x71,
+	//[0x72] = IN_x72,
+	//[0x73] = IN_x73,
+	//[0x74] = IN_x74,
+	//[0x75] = IN_x75,
 	[0x76] = IN_x76,
 	[0x77] = IN_x77,
 	[0x78] = IN_x78,
@@ -2080,34 +2267,117 @@ func_t optimized_instrs[] = {
 	[0x83] = IN_x83,
 	[0x84] = IN_x84,
 	[0x85] = IN_x85,
+	//[0x86] = IN_x86,
 	[0x87] = IN_x87,
+	//[0x88] = IN_x88,
+	//[0x89] = IN_x89,
+	//[0x8A] = IN_x8A,
+	//[0x8B] = IN_x8B,
+	//[0x8C] = IN_x8C,
+	//[0x8D] = IN_x8D,
+	//[0x8E] = IN_x8E,
+	//[0x8F] = IN_x8F,
+	//[0x90] = IN_x90,
+	//[0x91] = IN_x91,
+	//[0x92] = IN_x92,
+	//[0x93] = IN_x93,
+	//[0x94] = IN_x94,
+	//[0x95] = IN_x95,
+	//[0x96] = IN_x96,
+	//[0x97] = IN_x97,
+	//[0x98] = IN_x98,
+	//[0x99] = IN_x99,
+	//[0x9A] = IN_x9A,
+	//[0x9B] = IN_x9B,
+	//[0x9C] = IN_x9C,
+	//[0x9D] = IN_x9D,
+	//[0x9E] = IN_x9E,
+	//[0x9F] = IN_x9F,
+	//[0xA0] = IN_xA0,
+	//[0xA1] = IN_xA1,
+	//[0xA2] = IN_xA2,
+	//[0xA3] = IN_xA3,
+	//[0xA4] = IN_xA4,
+	//[0xA5] = IN_xA5,
+	//[0xA6] = IN_xA6,
 	[0xA7] = IN_xA7,
+	//[0xA8] = IN_xA8,
+	//[0xA9] = IN_xA9,
+	//[0xAA] = IN_xAA,
+	//[0xAB] = IN_xAB,
+	//[0xAC] = IN_xAC,
+	//[0xAD] = IN_xAD,
+	//[0xAE] = IN_xAE,
 	[0xAF] = IN_xAF,
+	//[0xB0] = IN_xB0,
 	[0xB1] = IN_xB1,
+	//[0xB2] = IN_xB2,
+	//[0xB3] = IN_xB3,
+	//[0xB4] = IN_xB4,
+	//[0xB5] = IN_xB5,
+	//[0xB6] = IN_xB6,
+	//[0xB7] = IN_xB7,
+	//[0xB8] = IN_xB8,
+	//[0xB9] = IN_xB9,
+	//[0xBA] = IN_xBA,
+	//[0xBB] = IN_xBB,
+	//[0xBC] = IN_xBC,
+	//[0xBD] = IN_xBD,
+	//[0xBE] = IN_xBE,
+	//[0xBF] = IN_xBF,
 	[0xC0] = IN_xC0,
 	[0xC1] = IN_xC1,
+	//[0xC2] = IN_xC2,
 	[0xC3] = IN_xC3,
+	//[0xC4] = IN_xC4,
 	[0xC5] = IN_xC5,
+	//[0xC6] = IN_xC6,
+	[0xC7] = IN_xC7,
 	[0xC8] = IN_xC8,
 	[0xC9] = IN_xC9,
 	[0xCA] = IN_xCA,
+	//[0xCB] = IN_xCB,
+	//[0xCC] = IN_xCC,
 	[0xCD] = IN_xCD,
+	//[0xCE] = IN_xCE,
+	[0xCF] = IN_xCF,
+	//[0xD0] = IN_xD0,
 	[0xD1] = IN_xD1,
+	//[0xD2] = IN_xD2,
+	//[0xD4] = IN_xD4,
 	[0xD5] = IN_xD5,
+	//[0xD6] = IN_xD6,
+	[0xD7] = IN_xD7,
+	//[0xD8] = IN_xD8,
+	//[0xD9] = IN_xD9,
+	//[0xDA] = IN_xDA,
+	//[0xDC] = IN_xDC,
+	//[0xDE] = IN_xDE,
+	[0xDF] = IN_xDF,
 	[0xE0] = IN_xE0,
 	[0xE1] = IN_xE1,
 	[0xE2] = IN_xE2,
 	[0xE5] = IN_xE5,
 	[0xE6] = IN_xE6,
+	[0xE7] = IN_xE7,
+	//[0xE8] = IN_xE8,
+	//[0xE9] = IN_xE9,
 	[0xEA] = IN_xEA,
+	//[0xEE] = IN_xEE,
+	[0xEF] = IN_xEF,
 	[0xF0] = IN_xF0,
 	[0xF1] = IN_xF1,
+	//[0xF2] = IN_xF2,
 	[0xF3] = IN_xF3,
 	[0xF5] = IN_xF5,
+	//[0xF6] = IN_xF6,
+	[0xF7] = IN_xF7,
+	//[0xF8] = IN_xF8,
+	//[0xF9] = IN_xF9,
 	[0xFA] = IN_xFA,
 	[0xFB] = IN_xFB,
 	[0xFE] = IN_xFE,
-	[0xFF] = NULL,
+	[0xFF] = IN_xFF,
 };
 
 void cpu_step() {

@@ -24,7 +24,6 @@ static SceUID audio_mutex = 0;
 
 int audio_thread(unsigned int argc, void *argv) {
 	int ch = sceAudioOutOpenPort(SCE_AUDIO_OUT_PORT_TYPE_BGM, AUDIO_SAMPLES_NUM, 44100, SCE_AUDIO_OUT_MODE_MONO);
-	sceClibPrintf("ch %x\n", ch);
 
 	for (;;) {
 		if (emu.state == EMU_PAUSED) {
