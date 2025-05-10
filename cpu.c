@@ -2823,11 +2823,11 @@ void IN_x8E() {
 
 void IN_x8F() {
 	uint16_t reg = cpu.regs.A;
-	cpu.regs.A = (reg + cpu.regs.A + (uint16_t)CPU_FLAG_C_SET) & 0xFF;
+	cpu.regs.A = (reg + reg + (uint16_t)CPU_FLAG_C_SET) & 0xFF;
 	CPU_SET_FLAG(FLAG_Z, cpu.regs.A == 0);
 	CPU_SET_FLAG(FLAG_N, 0);
-	CPU_SET_FLAG(FLAG_H, (reg & 0x0F) + (cpu.regs.A & 0x0F) + CPU_FLAG_C_SET > 0x0F);
-	CPU_SET_FLAG(FLAG_C, reg + cpu.regs.A + (uint16_t)CPU_FLAG_C_SET > 0xFF);
+	CPU_SET_FLAG(FLAG_H, (reg & 0x0F) + (reg & 0x0F) + CPU_FLAG_C_SET > 0x0F);
+	CPU_SET_FLAG(FLAG_C, reg + reg + (uint16_t)CPU_FLAG_C_SET > 0xFF);
 }
 
 void IN_x90() {
