@@ -2163,6 +2163,11 @@ void IN_x22() {
 	emu_incr_cycles(1);
 }
 
+void IN_x23() {
+	emu_incr_cycles(1);
+	*(uint16_t *)&cpu.regs.L = *(uint16_t *)&cpu.regs.L + 1;
+}
+
 void IN_x24() {
 	cpu.regs.H++;
 	CPU_SET_FLAG(FLAG_Z, cpu.regs.H == 0);
@@ -2175,11 +2180,6 @@ void IN_x25() {
 	CPU_SET_FLAG(FLAG_Z, cpu.regs.H == 0);
 	CPU_SET_FLAG(FLAG_N, 1);
 	CPU_SET_FLAG(FLAG_H, (cpu.regs.H & 0x0F) == 0x0F);
-}
-
-void IN_x23() {
-	emu_incr_cycles(1);
-	*(uint16_t *)&cpu.regs.L = *(uint16_t *)&cpu.regs.L + 1;
 }
 
 void IN_x26() {
@@ -2304,18 +2304,18 @@ void IN_x33() {
 }
 
 void IN_x34() {
-	emu_incr_cycles(2);
 	uint8_t val = (bus_read(*(uint16_t *)&cpu.regs.L) + 1) & 0xFF;
 	bus_write(*(uint16_t *)&cpu.regs.L, val);
+	emu_incr_cycles(2);
 	CPU_SET_FLAG(FLAG_Z, val == 0);
 	CPU_SET_FLAG(FLAG_N, 0);
 	CPU_SET_FLAG(FLAG_H, (val & 0x0F) == 0);
 }
 
 void IN_x35() {
-	emu_incr_cycles(2);
 	uint8_t val = bus_read(*(uint16_t *)&cpu.regs.L) - 1;
 	bus_write(*(uint16_t *)&cpu.regs.L, val);
+	emu_incr_cycles(2);
 	CPU_SET_FLAG(FLAG_Z, val == 0);
 	CPU_SET_FLAG(FLAG_N, 1);
 	CPU_SET_FLAG(FLAG_H, (val & 0x0F) == 0x0F);
@@ -3236,7 +3236,6 @@ void IN_xBD() {
 void IN_xBE() {
 	uint8_t fetched_data = bus_read(*(uint16_t *)&cpu.regs.L);
 	emu_incr_cycles(1);
-	
 	int val = (int)cpu.regs.A - (int)fetched_data;
 	CPU_SET_FLAG(FLAG_Z, val == 0);
 	CPU_SET_FLAG(FLAG_N, 1);
@@ -3377,8 +3376,8 @@ void IN_xCA() {
 }
 
 void IN_xCB() {
-	emu_incr_cycles(2);
 	uint8_t opcode = bus_read(cpu.regs.PC++);
+	emu_incr_cycles(2);
 	cb_instrs[opcode]();
 }
 
@@ -3645,11 +3644,11 @@ void IN_xE8() {
 	CPU_SET_FLAG(FLAG_H, ((reg & 0x0F) + (fetched_data & 0x0F)) >= 0x10 ? 1 : 0);
 	CPU_SET_FLAG(FLAG_C, ((reg & 0xFF) + (fetched_data & 0xFF)) >= 0x100 ? 1 : 0);
 	cpu.regs.SP = val & 0xFFFF;
+	emu_incr_cycles(1);
 }
 
 void IN_xE9() {
 	cpu.regs.PC = *(uint16_t *)&cpu.regs.L;
-	emu_incr_cycles(1);
 }
 
 void IN_xEA() {
@@ -3744,6 +3743,7 @@ void IN_xF8() {
 	CPU_SET_FLAG(FLAG_H, (cpu.regs.SP & 0x0F) + (fetched_data & 0x0F) >= 0x10);
 	CPU_SET_FLAG(FLAG_C, (cpu.regs.SP & 0xFF) + (fetched_data & 0xFF) >= 0x100);
 	*(uint16_t *)&cpu.regs.L = cpu.regs.SP + (int8_t)fetched_data;
+	emu_incr_cycles(1);
 }
 
 void IN_xF9() {
@@ -3753,7 +3753,7 @@ void IN_xF9() {
 
 void IN_xFA() {
 	uint16_t low = bus_read(cpu.regs.PC);
-	emu_incr_cycles(2);
+	emu_incr_cycles(1);
 	uint16_t high = bus_read(cpu.regs.PC + 1);
 	emu_incr_cycles(1);
 	cpu.regs.PC += 2;
