@@ -1217,6 +1217,13 @@ void IN_x0C() {
 	CPU_SET_FLAG(FLAG_H, (cpu.regs.C & 0x0F) == 0);
 }
 
+void IN_x0D() {
+	cpu.regs.C--;
+	CPU_SET_FLAG(FLAG_Z, cpu.regs.C == 0);
+	CPU_SET_FLAG(FLAG_N, 1);
+	CPU_SET_FLAG(FLAG_H, (cpu.regs.C & 0x0F) == 0x0F);
+}
+
 void IN_x0E() {
 	uint8_t fetched_data = bus_read(cpu.regs.PC);
 	emu_incr_cycles(1);
@@ -1438,7 +1445,7 @@ void IN_x29() {
 	CPU_SET_FLAG(FLAG_N, 0);
 	CPU_SET_FLAG(FLAG_H, ((reg & 0x0FFF) + (fetched_data & 0x0FFF)) >= 0x1000 ? 1 : 0);
 	CPU_SET_FLAG(FLAG_C, val >= 0x10000 ? 1 : 0);
-	*(uint16_t *)&cpu.regs.L; = val & 0xFFFF;
+	*(uint16_t *)&cpu.regs.L = val & 0xFFFF;
 }
 
 void IN_x2A() {
@@ -1449,6 +1456,7 @@ void IN_x2A() {
 }
 
 void IN_x2B() {
+	emu_incr_cycles(1);
 	*(uint16_t *)&cpu.regs.L = *(uint16_t *)&cpu.regs.L - 1;
 }
 
@@ -1457,6 +1465,13 @@ void IN_x2C() {
 	CPU_SET_FLAG(FLAG_Z, cpu.regs.L == 0);
 	CPU_SET_FLAG(FLAG_N, 0);
 	CPU_SET_FLAG(FLAG_H, (cpu.regs.L & 0x0F) == 0);
+}
+
+void IN_x2D() {
+	cpu.regs.L--;
+	CPU_SET_FLAG(FLAG_Z, cpu.regs.L == 0);
+	CPU_SET_FLAG(FLAG_N, 1);
+	CPU_SET_FLAG(FLAG_H, (cpu.regs.L & 0x0F) == 0x0F);
 }
 
 void IN_x2E() {
@@ -1839,6 +1854,157 @@ void IN_x87() {
 	cpu.regs.A = val & 0xFF;
 }
 
+void IN_x88() {
+	uint16_t reg = cpu.regs.A;
+	cpu.regs.A = (reg + cpu.regs.B + (uint16_t)CPU_FLAG_C_SET) & 0xFF;
+	CPU_SET_FLAG(FLAG_Z, cpu.regs.A == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, (reg & 0x0F) + (cpu.regs.B & 0x0F) + CPU_FLAG_C_SET > 0x0F);
+	CPU_SET_FLAG(FLAG_C, reg + cpu.regs.B + (uint16_t)CPU_FLAG_C_SET > 0xFF);
+}
+
+void IN_x89() {
+	uint16_t reg = cpu.regs.A;
+	cpu.regs.A = (reg + cpu.regs.C + (uint16_t)CPU_FLAG_C_SET) & 0xFF;
+	CPU_SET_FLAG(FLAG_Z, cpu.regs.A == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, (reg & 0x0F) + (cpu.regs.C & 0x0F) + CPU_FLAG_C_SET > 0x0F);
+	CPU_SET_FLAG(FLAG_C, reg + cpu.regs.C + (uint16_t)CPU_FLAG_C_SET > 0xFF);
+}
+
+void IN_x8A() {
+	uint16_t reg = cpu.regs.A;
+	cpu.regs.A = (reg + cpu.regs.D + (uint16_t)CPU_FLAG_C_SET) & 0xFF;
+	CPU_SET_FLAG(FLAG_Z, cpu.regs.A == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, (reg & 0x0F) + (cpu.regs.D & 0x0F) + CPU_FLAG_C_SET > 0x0F);
+	CPU_SET_FLAG(FLAG_C, reg + cpu.regs.D + (uint16_t)CPU_FLAG_C_SET > 0xFF);
+}
+
+void IN_x8B() {
+	uint16_t reg = cpu.regs.A;
+	cpu.regs.A = (reg + cpu.regs.E + (uint16_t)CPU_FLAG_C_SET) & 0xFF;
+	CPU_SET_FLAG(FLAG_Z, cpu.regs.A == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, (reg & 0x0F) + (cpu.regs.E & 0x0F) + CPU_FLAG_C_SET > 0x0F);
+	CPU_SET_FLAG(FLAG_C, reg + cpu.regs.E + (uint16_t)CPU_FLAG_C_SET > 0xFF);
+}
+
+void IN_x8C() {
+	uint16_t reg = cpu.regs.A;
+	cpu.regs.A = (reg + cpu.regs.H + (uint16_t)CPU_FLAG_C_SET) & 0xFF;
+	CPU_SET_FLAG(FLAG_Z, cpu.regs.A == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, (reg & 0x0F) + (cpu.regs.H & 0x0F) + CPU_FLAG_C_SET > 0x0F);
+	CPU_SET_FLAG(FLAG_C, reg + cpu.regs.H + (uint16_t)CPU_FLAG_C_SET > 0xFF);
+}
+
+void IN_x8D() {
+	uint16_t reg = cpu.regs.A;
+	cpu.regs.A = (reg + cpu.regs.L + (uint16_t)CPU_FLAG_C_SET) & 0xFF;
+	CPU_SET_FLAG(FLAG_Z, cpu.regs.A == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, (reg & 0x0F) + (cpu.regs.L & 0x0F) + CPU_FLAG_C_SET > 0x0F);
+	CPU_SET_FLAG(FLAG_C, reg + cpu.regs.L + (uint16_t)CPU_FLAG_C_SET > 0xFF);
+}
+
+void IN_x8E() {
+	uint8_t fetched_data = bus_read(*(uint16_t *)&cpu.regs.L);
+	emu_incr_cycles(1);
+	uint16_t reg = cpu.regs.A;
+	cpu.regs.A = (reg + fetched_data + (uint16_t)CPU_FLAG_C_SET) & 0xFF;
+	CPU_SET_FLAG(FLAG_Z, cpu.regs.A == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, (reg & 0x0F) + (fetched_data & 0x0F) + CPU_FLAG_C_SET > 0x0F);
+	CPU_SET_FLAG(FLAG_C, reg + fetched_data + (uint16_t)CPU_FLAG_C_SET > 0xFF);
+}
+
+void IN_x8F() {
+	uint16_t reg = cpu.regs.A;
+	cpu.regs.A = (reg + cpu.regs.A + (uint16_t)CPU_FLAG_C_SET) & 0xFF;
+	CPU_SET_FLAG(FLAG_Z, cpu.regs.A == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, (reg & 0x0F) + (cpu.regs.A & 0x0F) + CPU_FLAG_C_SET > 0x0F);
+	CPU_SET_FLAG(FLAG_C, reg + cpu.regs.A + (uint16_t)CPU_FLAG_C_SET > 0xFF);
+}
+
+void IN_x98() {
+	uint8_t fetched_data = cpu.regs.B;
+	uint8_t val = fetched_data + CPU_FLAG_C_SET;
+	int reg = cpu.regs.A;
+	cpu.regs.A = reg - val;
+	CPU_SET_FLAG(FLAG_Z, reg - val == 0);
+	CPU_SET_FLAG(FLAG_N, 1);
+	CPU_SET_FLAG(FLAG_H, ((reg & 0x0F) - ((int)fetched_data & 0x0F) - (int)CPU_FLAG_C_SET) < 0);
+	CPU_SET_FLAG(FLAG_C, (reg - (int)fetched_data - (int)CPU_FLAG_C_SET) < 0);
+}
+
+void IN_x99() {
+	uint8_t fetched_data = cpu.regs.C;
+	uint8_t val = fetched_data + CPU_FLAG_C_SET;
+	int reg = cpu.regs.A;
+	cpu.regs.A = reg - val;
+	CPU_SET_FLAG(FLAG_Z, reg - val == 0);
+	CPU_SET_FLAG(FLAG_N, 1);
+	CPU_SET_FLAG(FLAG_H, ((reg & 0x0F) - ((int)fetched_data & 0x0F) - (int)CPU_FLAG_C_SET) < 0);
+	CPU_SET_FLAG(FLAG_C, (reg - (int)fetched_data - (int)CPU_FLAG_C_SET) < 0);
+}
+
+void IN_x9A() {
+	uint8_t fetched_data = cpu.regs.D;
+	uint8_t val = fetched_data + CPU_FLAG_C_SET;
+	int reg = cpu.regs.A;
+	cpu.regs.A = reg - val;
+	CPU_SET_FLAG(FLAG_Z, reg - val == 0);
+	CPU_SET_FLAG(FLAG_N, 1);
+	CPU_SET_FLAG(FLAG_H, ((reg & 0x0F) - ((int)fetched_data & 0x0F) - (int)CPU_FLAG_C_SET) < 0);
+	CPU_SET_FLAG(FLAG_C, (reg - (int)fetched_data - (int)CPU_FLAG_C_SET) < 0);
+}
+
+void IN_x9B() {
+	uint8_t fetched_data = cpu.regs.E;
+	uint8_t val = fetched_data + CPU_FLAG_C_SET;
+	int reg = cpu.regs.A;
+	cpu.regs.A = reg - val;
+	CPU_SET_FLAG(FLAG_Z, reg - val == 0);
+	CPU_SET_FLAG(FLAG_N, 1);
+	CPU_SET_FLAG(FLAG_H, ((reg & 0x0F) - ((int)fetched_data & 0x0F) - (int)CPU_FLAG_C_SET) < 0);
+	CPU_SET_FLAG(FLAG_C, (reg - (int)fetched_data - (int)CPU_FLAG_C_SET) < 0);
+}
+
+void IN_x9C() {
+	uint8_t fetched_data = cpu.regs.H;
+	uint8_t val = fetched_data + CPU_FLAG_C_SET;
+	int reg = cpu.regs.A;
+	cpu.regs.A = reg - val;
+	CPU_SET_FLAG(FLAG_Z, reg - val == 0);
+	CPU_SET_FLAG(FLAG_N, 1);
+	CPU_SET_FLAG(FLAG_H, ((reg & 0x0F) - ((int)fetched_data & 0x0F) - (int)CPU_FLAG_C_SET) < 0);
+	CPU_SET_FLAG(FLAG_C, (reg - (int)fetched_data - (int)CPU_FLAG_C_SET) < 0);
+}
+
+void IN_x9D() {
+	uint8_t fetched_data = cpu.regs.L;
+	uint8_t val = fetched_data + CPU_FLAG_C_SET;
+	int reg = cpu.regs.A;
+	cpu.regs.A = reg - val;
+	CPU_SET_FLAG(FLAG_Z, reg - val == 0);
+	CPU_SET_FLAG(FLAG_N, 1);
+	CPU_SET_FLAG(FLAG_H, ((reg & 0x0F) - ((int)fetched_data & 0x0F) - (int)CPU_FLAG_C_SET) < 0);
+	CPU_SET_FLAG(FLAG_C, (reg - (int)fetched_data - (int)CPU_FLAG_C_SET) < 0);
+}
+
+void IN_x9F() {
+	uint8_t fetched_data = cpu.regs.A;
+	uint8_t val = fetched_data + CPU_FLAG_C_SET;
+	int reg = cpu.regs.A;
+	cpu.regs.A = reg - val;
+	CPU_SET_FLAG(FLAG_Z, reg - val == 0);
+	CPU_SET_FLAG(FLAG_N, 1);
+	CPU_SET_FLAG(FLAG_H, ((reg & 0x0F) - ((int)fetched_data & 0x0F) - (int)CPU_FLAG_C_SET) < 0);
+	CPU_SET_FLAG(FLAG_C, (reg - (int)fetched_data - (int)CPU_FLAG_C_SET) < 0);
+}
+
 void IN_xA7() {
 	CPU_SET_FLAG(FLAG_Z, cpu.regs.A == 0);
 	CPU_SET_FLAG(FLAG_N, 0);
@@ -1854,8 +2020,55 @@ void IN_xAF() {
 	CPU_SET_FLAG(FLAG_C, 0);
 }
 
+void IN_xB0() {
+	cpu.regs.A |= cpu.regs.B;
+	CPU_SET_FLAG(FLAG_Z, cpu.regs.A == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, 0);
+}
+
 void IN_xB1() {
 	cpu.regs.A |= cpu.regs.C;
+	CPU_SET_FLAG(FLAG_Z, cpu.regs.A == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, 0);
+}
+
+void IN_xB2() {
+	cpu.regs.A |= cpu.regs.D;
+	CPU_SET_FLAG(FLAG_Z, cpu.regs.A == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, 0);
+}
+
+void IN_xB3() {
+	cpu.regs.A |= cpu.regs.E;
+	CPU_SET_FLAG(FLAG_Z, cpu.regs.A == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, 0);
+}
+
+void IN_xB4() {
+	cpu.regs.A |= cpu.regs.H;
+	CPU_SET_FLAG(FLAG_Z, cpu.regs.A == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, 0);
+}
+
+void IN_xB5() {
+	cpu.regs.A |= cpu.regs.L;
+	CPU_SET_FLAG(FLAG_Z, cpu.regs.A == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, 0);
+	CPU_SET_FLAG(FLAG_C, 0);
+}
+
+void IN_xB7() {
 	CPU_SET_FLAG(FLAG_Z, cpu.regs.A == 0);
 	CPU_SET_FLAG(FLAG_N, 0);
 	CPU_SET_FLAG(FLAG_H, 0);
@@ -1890,6 +2103,23 @@ void IN_xC3() {
 	emu_incr_cycles(1);
 	cpu.regs.PC = low | (high << 8);
 	emu_incr_cycles(1);
+}
+
+void IN_xC4() {
+	if ((cpu.regs.F & FLAG_Z) == 0) {
+		uint16_t low = bus_read(cpu.regs.PC);
+		emu_incr_cycles(1);
+		uint16_t high = bus_read(cpu.regs.PC + 1);
+		emu_incr_cycles(1);
+		uint16_t fetched_data = low | (high << 8);
+		emu_incr_cycles(2);
+		stack_push16(cpu.regs.PC + 2);
+		cpu.regs.PC = fetched_data;
+		emu_incr_cycles(1);
+	} else {
+		emu_incr_cycles(2);
+		cpu.regs.PC += 2;
+	}
 }
 
 void IN_xC5() {
@@ -1943,17 +2173,45 @@ void IN_xCA() {
 	}
 }
 
+void IN_xCC() {
+	if ((cpu.regs.F & FLAG_Z) == FLAG_Z) {
+		uint16_t low = bus_read(cpu.regs.PC);
+		emu_incr_cycles(1);
+		uint16_t high = bus_read(cpu.regs.PC + 1);
+		emu_incr_cycles(1);
+		uint16_t fetched_data = low | (high << 8);
+		emu_incr_cycles(2);
+		stack_push16(cpu.regs.PC + 2);
+		cpu.regs.PC = fetched_data;
+		emu_incr_cycles(1);
+	} else {
+		emu_incr_cycles(2);
+		cpu.regs.PC += 2;
+	}
+}
+
 void IN_xCD() {
 	uint16_t low = bus_read(cpu.regs.PC);
 	emu_incr_cycles(1);
 	uint16_t high = bus_read(cpu.regs.PC + 1);
 	emu_incr_cycles(1);
 	uint16_t fetched_data = low | (high << 8);
-	cpu.regs.PC += 2;
 	emu_incr_cycles(2);
-	stack_push16(cpu.regs.PC);
+	stack_push16(cpu.regs.PC + 2);
 	cpu.regs.PC = fetched_data;
 	emu_incr_cycles(1);
+}
+
+void IN_xCE() {
+	uint8_t fetched_data = bus_read(cpu.regs.PC);
+	emu_incr_cycles(1);
+	cpu.regs.PC++;
+	uint16_t reg = cpu.regs.A;
+	cpu.regs.A = (reg + fetched_data + (uint16_t)CPU_FLAG_C_SET) & 0xFF;
+	CPU_SET_FLAG(FLAG_Z, cpu.regs.A == 0);
+	CPU_SET_FLAG(FLAG_N, 0);
+	CPU_SET_FLAG(FLAG_H, (reg & 0x0F) + (fetched_data & 0x0F) + CPU_FLAG_C_SET > 0x0F);
+	CPU_SET_FLAG(FLAG_C, reg + fetched_data + (uint16_t)CPU_FLAG_C_SET > 0xFF);
 }
 
 void IN_xCF() {
@@ -1972,6 +2230,23 @@ void IN_xD1() {
 	*(uint16_t *)&cpu.regs.E = val;
 }
 
+void IN_xD4() {
+	if ((cpu.regs.F & FLAG_C) == 0) {
+		uint16_t low = bus_read(cpu.regs.PC);
+		emu_incr_cycles(1);
+		uint16_t high = bus_read(cpu.regs.PC + 1);
+		emu_incr_cycles(1);
+		uint16_t fetched_data = low | (high << 8);
+		emu_incr_cycles(2);
+		stack_push16(cpu.regs.PC + 2);
+		cpu.regs.PC = fetched_data;
+		emu_incr_cycles(1);
+	} else {
+		emu_incr_cycles(2);
+		cpu.regs.PC += 2;
+	}
+}
+
 void IN_xD5() {
 	uint16_t val = *(uint16_t *)&cpu.regs.E;
 	emu_incr_cycles(1);
@@ -1986,6 +2261,33 @@ void IN_xD7() {
 	stack_push16(cpu.regs.PC);
 	cpu.regs.PC = 0x10;
 	emu_incr_cycles(1);
+}
+
+void IN_xD9() {
+	cpu.master_interrupts = 1;
+	uint16_t low = stack_pop();
+	emu_incr_cycles(1);
+	uint16_t high = stack_pop();
+	emu_incr_cycles(1);
+	cpu.regs.PC = (high << 8) | low;
+	emu_incr_cycles(1);
+}
+
+void IN_xDC() {
+	if ((cpu.regs.F & FLAG_C) == FLAG_C) {
+		uint16_t low = bus_read(cpu.regs.PC);
+		emu_incr_cycles(1);
+		uint16_t high = bus_read(cpu.regs.PC + 1);
+		emu_incr_cycles(1);
+		uint16_t fetched_data = low | (high << 8);
+		emu_incr_cycles(2);
+		stack_push16(cpu.regs.PC + 2);
+		cpu.regs.PC = fetched_data;
+		emu_incr_cycles(1);
+	} else {
+		emu_incr_cycles(2);
+		cpu.regs.PC += 2;
+	}
 }
 
 void IN_xDF() {
@@ -2042,6 +2344,11 @@ void IN_xE7() {
 	emu_incr_cycles(2);
 	stack_push16(cpu.regs.PC);
 	cpu.regs.PC = 0x20;
+	emu_incr_cycles(1);
+}
+
+void IN_xE9() {
+	cpu.regs.PC = *(uint16_t *)&cpu.regs.L;
 	emu_incr_cycles(1);
 }
 
@@ -2147,6 +2454,7 @@ func_t optimized_instrs[] = {
 	[0x0A] = IN_x0A,
 	[0x0B] = IN_x0B,
 	[0x0C] = IN_x0C,
+	[0x0D] = IN_x0D,
 	[0x0E] = IN_x0E,
 	[0x0F] = IN_x0F,
 	[0x10] = IN_x10,
@@ -2178,7 +2486,7 @@ func_t optimized_instrs[] = {
 	[0x2A] = IN_x2A,
 	[0x2B] = IN_x2B,
 	[0x2C] = IN_x2C,
-	//[0x2D] = IN_x2D,
+	[0x2D] = IN_x2D,
 	[0x2E] = IN_x2E,
 	[0x2F] = IN_x2F,
 	[0x30] = IN_x30,
@@ -2269,14 +2577,14 @@ func_t optimized_instrs[] = {
 	[0x85] = IN_x85,
 	//[0x86] = IN_x86,
 	[0x87] = IN_x87,
-	//[0x88] = IN_x88,
-	//[0x89] = IN_x89,
-	//[0x8A] = IN_x8A,
-	//[0x8B] = IN_x8B,
-	//[0x8C] = IN_x8C,
-	//[0x8D] = IN_x8D,
-	//[0x8E] = IN_x8E,
-	//[0x8F] = IN_x8F,
+	[0x88] = IN_x88,
+	[0x89] = IN_x89,
+	[0x8A] = IN_x8A,
+	[0x8B] = IN_x8B,
+	[0x8C] = IN_x8C,
+	[0x8D] = IN_x8D,
+	[0x8E] = IN_x8E,
+	[0x8F] = IN_x8F,
 	//[0x90] = IN_x90,
 	//[0x91] = IN_x91,
 	//[0x92] = IN_x92,
@@ -2285,14 +2593,14 @@ func_t optimized_instrs[] = {
 	//[0x95] = IN_x95,
 	//[0x96] = IN_x96,
 	//[0x97] = IN_x97,
-	//[0x98] = IN_x98,
-	//[0x99] = IN_x99,
-	//[0x9A] = IN_x9A,
-	//[0x9B] = IN_x9B,
-	//[0x9C] = IN_x9C,
-	//[0x9D] = IN_x9D,
+	[0x98] = IN_x98,
+	[0x99] = IN_x99,
+	[0x9A] = IN_x9A,
+	[0x9B] = IN_x9B,
+	[0x9C] = IN_x9C,
+	[0x9D] = IN_x9D,
 	//[0x9E] = IN_x9E,
-	//[0x9F] = IN_x9F,
+	[0x9F] = IN_x9F,
 	//[0xA0] = IN_xA0,
 	//[0xA1] = IN_xA1,
 	//[0xA2] = IN_xA2,
@@ -2309,14 +2617,14 @@ func_t optimized_instrs[] = {
 	//[0xAD] = IN_xAD,
 	//[0xAE] = IN_xAE,
 	[0xAF] = IN_xAF,
-	//[0xB0] = IN_xB0,
+	[0xB0] = IN_xB0,
 	[0xB1] = IN_xB1,
-	//[0xB2] = IN_xB2,
-	//[0xB3] = IN_xB3,
-	//[0xB4] = IN_xB4,
-	//[0xB5] = IN_xB5,
+	[0xB2] = IN_xB2,
+	[0xB3] = IN_xB3,
+	[0xB4] = IN_xB4,
+	[0xB5] = IN_xB5,
 	//[0xB6] = IN_xB6,
-	//[0xB7] = IN_xB7,
+	[0xB7] = IN_xB7,
 	//[0xB8] = IN_xB8,
 	//[0xB9] = IN_xB9,
 	//[0xBA] = IN_xBA,
@@ -2329,7 +2637,7 @@ func_t optimized_instrs[] = {
 	[0xC1] = IN_xC1,
 	//[0xC2] = IN_xC2,
 	[0xC3] = IN_xC3,
-	//[0xC4] = IN_xC4,
+	[0xC4] = IN_xC4,
 	[0xC5] = IN_xC5,
 	//[0xC6] = IN_xC6,
 	[0xC7] = IN_xC7,
@@ -2337,21 +2645,21 @@ func_t optimized_instrs[] = {
 	[0xC9] = IN_xC9,
 	[0xCA] = IN_xCA,
 	//[0xCB] = IN_xCB,
-	//[0xCC] = IN_xCC,
+	[0xCC] = IN_xCC,
 	[0xCD] = IN_xCD,
-	//[0xCE] = IN_xCE,
+	[0xCE] = IN_xCE,
 	[0xCF] = IN_xCF,
 	//[0xD0] = IN_xD0,
 	[0xD1] = IN_xD1,
 	//[0xD2] = IN_xD2,
-	//[0xD4] = IN_xD4,
+	[0xD4] = IN_xD4,
 	[0xD5] = IN_xD5,
 	//[0xD6] = IN_xD6,
 	[0xD7] = IN_xD7,
 	//[0xD8] = IN_xD8,
-	//[0xD9] = IN_xD9,
+	[0xD9] = IN_xD9,
 	//[0xDA] = IN_xDA,
-	//[0xDC] = IN_xDC,
+	[0xDC] = IN_xDC,
 	//[0xDE] = IN_xDE,
 	[0xDF] = IN_xDF,
 	[0xE0] = IN_xE0,
@@ -2361,7 +2669,7 @@ func_t optimized_instrs[] = {
 	[0xE6] = IN_xE6,
 	[0xE7] = IN_xE7,
 	//[0xE8] = IN_xE8,
-	//[0xE9] = IN_xE9,
+	[0xE9] = IN_xE9,
 	[0xEA] = IN_xEA,
 	//[0xEE] = IN_xEE,
 	[0xEF] = IN_xEF,
