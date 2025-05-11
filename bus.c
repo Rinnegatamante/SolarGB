@@ -150,6 +150,10 @@ void bus_init() {
 	MAP_RW_FUNC(ADDR_IO_REGS + 0x1C, apu_read_nr32, apu_write_nr32)
 	MAP_RW_FUNC(ADDR_IO_REGS + 0x1D, apu_read_nr33, apu_write_nr33)
 	MAP_RW_FUNC(ADDR_IO_REGS + 0x1E, apu_read_nr34, apu_write_nr34)
+	MAP_RW_FUNC(ADDR_IO_REGS + 0x20, apu_read_nr41, apu_write_nr41)
+	MAP_RW_FUNC(ADDR_IO_REGS + 0x21, apu_read_nr42, apu_write_nr42)
+	MAP_RW_FUNC(ADDR_IO_REGS + 0x22, apu_read_nr43, apu_write_nr43)
+	MAP_RW_FUNC(ADDR_IO_REGS + 0x23, apu_read_nr44, apu_write_nr44)
 	MAP_RW_RANGE(ADDR_LCD_REGS, ADDR_LCD_REGS + 0x0C, lcd_read, lcd_reg_write)
 	bus_write_funcs[ADDR_LCD_REGS + 0x06] = lcd_dma_write;
 	bus_write_funcs[ADDR_LCD_REGS + 0x07] = lcd_bg_write;
