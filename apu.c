@@ -15,6 +15,7 @@ static uint8_t duty_tbl[4][8] = {
 	{1, 0, 0, 0, 0, 1, 1, 1},
 	{0, 1, 1, 1, 1, 1, 1, 0}
 };
+static uint8_t wave_tbl[16] = {};
 
 static volatile int16_t audio_buffers[2][AUDIO_SAMPLES_NUM];
 static uint8_t audio_pull = 0;
@@ -193,8 +194,46 @@ void chn2_tick() {
 	}
 }
 
+void chn3_trigger() {
+	if (apu.chn3.active && apu.chn3.timer == 2) {
+		int pos = apu.chn3.pos >> 1;
+		if (pos < 4) {
+			wave_tbl[0] = wave_tbl[pos];
+		} else {
+			pos &= 0xFC;
+			sceClibMemmove(&wave_tbl[0], &wave_tbl[pos], 4);
+		}
+	}
+	apu.chn3.timer = 6;
+	apu.chn3.pos = 0;
+	apu.chn3.last_addr = 0;
+	apu.chn3.active = apu.chn3.dac_active;
+}
+
 void chn3_tick() {
-	// TODO
+	apu.chn3.ticks++;
+	apu.chn3.timer--;
+	if (apu.chn3.timer <= 0) {
+		apu.chn3.timer = (2048 - apu.chn3.freq_sweep.freq) << 1;
+		if (apu.chn3.active) {
+			apu.chn3.ticks = 0;
+			apu.chn3.last_addr = apu.chn3.pos >> 1;
+			if (apu.chn3.vol_code > 0) {
+				apu.chn3.out = wave_tbl[apu.chn3.last_addr];
+				if (apu.chn3.pos & 1) {
+					apu.chn3.out &= 0x0F;
+				} else {
+					apu.chn3.out >>= 4;
+				}
+				apu.chn3.out >>= (apu.chn3.vol_code - 1);
+			} else {
+				apu.chn3.out = 0;
+			}
+			apu.chn3.pos = (apu.chn3.pos + 1) % 32;
+		} else {
+			apu.chn3.out = 0;
+		}
+	}
 }
 
 void chn4_tick() {
@@ -237,7 +276,7 @@ void apu_tick() {
 		int sample = 0;
 		sample += apu.chn1.out;
 		sample += apu.chn2.out;
-		//sample += apu.chn3.out;
+		sample += apu.chn3.out;
 		//sample += apu.chn4.out;
 		audio_buffers[audio_push][samples_num++] = sample << 10;
 		
@@ -415,5 +454,81 @@ void apu_write_nr24(uint16_t addr, uint8_t val) {
 		apu.chn2.active = 0;
 	} else if (trigger) {
 		chn2_trigger();
+	}
+}
+
+uint8_t apu_read_nr30(uint16_t addr) {
+	return apu.chn3.dac_active ? 0xFF : 0x7F;
+}
+
+void apu_write_nr30(uint16_t addr, uint8_t val) {
+	if ((val & 0x80) == 0x80) {
+		apu.chn3.dac_active = 1;
+	}
+	apu.chn3.active &= apu.chn3.dac_active;
+}
+
+uint8_t apu_read_nr31(uint16_t addr) {
+	return 0xFF;
+}
+
+void apu_write_nr31(uint16_t addr, uint8_t val) {
+	apu.chn3.len_counter.len = apu.chn3.len_counter.full_len - val;
+}
+
+uint8_t apu_read_nr32(uint16_t addr) {
+	return 0x9F | (apu.chn3.vol_code << 5);
+}
+
+void apu_write_nr32(uint16_t addr, uint8_t val) {
+	apu.chn3.vol_code = (val >> 5) & 0x03;
+}
+
+uint8_t apu_read_nr33(uint16_t addr) {
+	return 0xFF;
+}
+
+void apu_write_nr33(uint16_t addr, uint8_t val) {
+	apu.chn3.freq_sweep.freq = (apu.chn3.freq_sweep.freq & 0x700) | val;
+}
+
+uint8_t apu_read_nr34(uint16_t addr) {
+	if (apu.chn1.len_counter.active) {
+		return 0xFF;
+	} else {
+		return 0xBF;
+	}
+}
+
+void apu_write_nr34(uint16_t addr, uint8_t val) {
+	uint8_t active = (val & 0x40) == 0x40;
+	uint8_t trigger = (val & 0x80) == 0x80;
+	if (apu.chn3.len_counter.active) {
+		if (trigger && apu.chn3.len_counter.len == 0) {
+			apu.chn3.len_counter.len = apu.chn3.len_counter.full_len;
+			if (active && (apu.chn3.len_counter.sequencer_frame & 1)) {
+				apu.chn3.len_counter.len--;
+			}
+		}
+	} else if (active) {
+		if (apu.chn3.len_counter.sequencer_frame & 1) {
+			if (apu.chn3.len_counter.len != 0) {
+				apu.chn3.len_counter.len--;
+			}
+			if (trigger && apu.chn3.len_counter.len == 0) {
+				apu.chn3.len_counter.len = apu.chn3.len_counter.full_len - 1;
+			}
+		}
+	} else {
+		if (trigger && apu.chn3.len_counter.len == 0) {
+			apu.chn3.len_counter.len = apu.chn3.len_counter.full_len;
+		}
+	}
+	apu.chn3.len_counter.active = active;
+	apu.chn3.freq_sweep.freq = (apu.chn3.freq_sweep.freq & 0xFF) | ((val & 0x07) << 8);
+	if (apu.chn3.len_counter.active && apu.chn3.len_counter.len == 0) {
+		apu.chn3.active = 0;
+	} else if (trigger) {
+		chn3_trigger();
 	}
 }

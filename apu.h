@@ -56,6 +56,10 @@ typedef struct {
 	int seq;
 	uint8_t duty;
 	uint8_t out;
+	uint8_t vol_code;
+	int last_addr;
+	int pos;
+	int ticks;
 	apu_freq_sweep_t freq_sweep;
 	apu_len_cnt_t len_counter;
 	apu_vol_env_t vol_envelope;
@@ -87,6 +91,11 @@ uint8_t apu_read_nr21(uint16_t addr);
 uint8_t apu_read_nr22(uint16_t addr);
 uint8_t apu_read_nr23(uint16_t addr);
 uint8_t apu_read_nr24(uint16_t addr);
+uint8_t apu_read_nr30(uint16_t addr);
+uint8_t apu_read_nr31(uint16_t addr);
+uint8_t apu_read_nr32(uint16_t addr);
+uint8_t apu_read_nr33(uint16_t addr);
+uint8_t apu_read_nr34(uint16_t addr);
 
 void apu_write_nr10(uint16_t addr, uint8_t val);
 void apu_write_nr11(uint16_t addr, uint8_t val);
@@ -97,5 +106,10 @@ void apu_write_nr21(uint16_t addr, uint8_t val);
 void apu_write_nr22(uint16_t addr, uint8_t val);
 void apu_write_nr23(uint16_t addr, uint8_t val);
 void apu_write_nr24(uint16_t addr, uint8_t val);
+void apu_write_nr30(uint16_t addr, uint8_t val);
+void apu_write_nr31(uint16_t addr, uint8_t val);
+void apu_write_nr32(uint16_t addr, uint8_t val);
+void apu_write_nr33(uint16_t addr, uint8_t val);
+void apu_write_nr34(uint16_t addr, uint8_t val);
 
 #endif
