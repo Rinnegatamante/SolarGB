@@ -337,7 +337,7 @@ void apu_write_nr14(uint16_t addr, uint8_t val) {
 		}
 	}
 	apu.chn1.len_counter.active = active;
-	if (apu.chn1.len_counter.len == 0) {
+	if (apu.chn1.len_counter.active && apu.chn1.len_counter.len == 0) {
 		apu.chn1.active = 0;
 	} else if (trigger) {
 		chn1_trigger();
@@ -389,30 +389,30 @@ void apu_write_nr24(uint16_t addr, uint8_t val) {
 	apu.chn2.freq_sweep.freq = (apu.chn2.freq_sweep.freq & 0xFF) | ((val & 0x07) << 8);
 	uint8_t active = (val & 0x40) == 0x40;
 	uint8_t trigger = (val & 0x80) == 0x80;
-	if (apu.chn1.len_counter.active) {
-		if (trigger && apu.chn1.len_counter.len == 0) {
-			apu.chn1.len_counter.len = apu.chn1.len_counter.full_len;
-			if (active && (apu.chn1.len_counter.sequencer_frame & 1)) {
-				apu.chn1.len_counter.len--;
+	if (apu.chn2.len_counter.active) {
+		if (trigger && apu.chn2.len_counter.len == 0) {
+			apu.chn2.len_counter.len = apu.chn2.len_counter.full_len;
+			if (active && (apu.chn2.len_counter.sequencer_frame & 1)) {
+				apu.chn2.len_counter.len--;
 			}
 		}
 	} else if (active) {
-		if (apu.chn1.len_counter.sequencer_frame & 1) {
-			if (apu.chn1.len_counter.len != 0) {
-				apu.chn1.len_counter.len--;
+		if (apu.chn2.len_counter.sequencer_frame & 1) {
+			if (apu.chn2.len_counter.len != 0) {
+				apu.chn2.len_counter.len--;
 			}
-			if (trigger && apu.chn1.len_counter.len == 0) {
-				apu.chn1.len_counter.len = apu.chn1.len_counter.full_len - 1;
+			if (trigger && apu.chn2.len_counter.len == 0) {
+				apu.chn2.len_counter.len = apu.chn2.len_counter.full_len - 1;
 			}
 		}
 	} else {
-		if (trigger && apu.chn1.len_counter.len == 0) {
-			apu.chn1.len_counter.len = apu.chn1.len_counter.full_len;
+		if (trigger && apu.chn2.len_counter.len == 0) {
+			apu.chn2.len_counter.len = apu.chn2.len_counter.full_len;
 		}
 	}
-	apu.chn1.len_counter.active = active;
-	if (apu.chn1.len_counter.len == 0) {
-		apu.chn1.active = 0;
+	apu.chn2.len_counter.active = active;
+	if (apu.chn2.len_counter.active && apu.chn2.len_counter.len == 0) {
+		apu.chn2.active = 0;
 	} else if (trigger) {
 		chn2_trigger();
 	}
